@@ -29,9 +29,7 @@ If you are using SQLite to store your results data you will need to first create
   python create_sqlite3.py
 
 3. JSON-->Elasticsearch 
-If Elasticsearch, you can uncomment write_to_ES line in base_attack. You will need to have an Elasticsearch index set up and running for this to work. more on that at some point.
-
-If you don't have your own Elasticsearch instance and you would like to push your data to the Lobster's central repository please let me know. 
+If Elasticsearch, you can uncomment write_to_ES line in base_attack. You will need to have an Elasticsearch index set up and running for this to work.
 
 ==========
 
