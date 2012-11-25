@@ -9,21 +9,30 @@ Dependencies
 Tested on Python v 2.7.3
 
 Python Requests Library
+https://github.com/kennethreitz/requests
 
-  apt-get install python-pip
+apt-get install python-pip
   pip install requests
 
 Consider turning requests safe_mode on if you are having issues
   nano /usr/local/lib/python2.7/dist-packages/requests/defaults.py
 advanced tuning can be done on the pool threads as well if you like
 
+
+Output Mode
+===========
+1. Terminal output
+
+2. SQLite
 If you are using SQLite to store your results data you will need to first create a SQLitedb
   sqlite3 results.db
   python create_sqlite3.py
 
-If Elasticsearch you can uncomment write_to_ES line in base_attack. I will be adding switches for these options in the future. You will need to have an Elasticsearch index set up and running for this to work. more on that at some point. 
+3. JSON-->Elasticsearch 
+If Elasticsearch, you can uncomment write_to_ES line in base_attack. You will need to have an Elasticsearch index set up and running for this to work. more on that at some point.
 
-Usagehttps://github.com/kennethreitz/requests
+If you don't have your own Elasticsearch instance and you would like to push your data to the Lobster's central repository please let me know. 
+
 ==========
 
 Show help file:
