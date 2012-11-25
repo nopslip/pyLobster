@@ -1,12 +1,12 @@
 pyLobster
 =========
 
-Used to audit dynamic HTTP Header processing. While "attacks" can be easily added for other testing senarios (XSS, New Line characters, whatever) it is currently designed to use basic SQLi test params
-At this point it will 
+Used to audit dynamic HTTP Header processing. It is currently designed to use basic SQLi test params but new header request values can be added easily. 
+ 
 
 Dependencies
 ============
-Tested working on Python v 2.7.3
+Tested on Python v 2.7.3
 
 Python Requests Library
 
@@ -23,7 +23,7 @@ If you are using SQLite to store your results data you will need to first create
 
 If Elasticsearch you can uncomment write_to_ES line in base_attack. I will be adding switches for these options in the future. You will need to have an Elasticsearch index set up and running for this to work. more on that at some point. 
 
-Usage
+Usagehttps://github.com/kennethreitz/requests
 ==========
 
 Show help file:
