@@ -1,18 +1,5 @@
 #!/usr/bin/env python
 
-#python loglobster.py -h 
-#python loglobster.py -f urlList.txt
-#need requests?
-#apt-get install python-pip
-#pip install requests
-#if backtrack, you may get version conflict error, do some shit to fix it! 
-#turn on safe_mode
-#maybe even bump pool threads
-#nano /usr/local/lib/python2.7/dist-packages/requests/defaults.py
-#create your sqlite3 db
-#sqlite3 results.db
-#python create_sqlite3.py
-
 import requests
 import sys
 import codecs
@@ -119,7 +106,6 @@ def attack_six(url):
 
 #the cookie attack. Premise is simple, send SQLi (or other bogus cookies) back to webserver, parse the returned HTML (sql_error_check) to see if there is an error thrown from the server.
 def attack_nine(url,c):	
-	# format cookie to string, maybe not necessary?
 	gtg = 0
 	at = 9	
 	d1 = str(c)
