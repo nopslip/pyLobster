@@ -209,7 +209,8 @@ def verbose(a,at,url, sErr):
 	print url 
 	print a.status_code
 	if sErr == True:
-                        print "Attack Number:", at, " ", bcolors.FAIL + "Succeeded! Error Detected.(now$
+                        print "Attack Number:", at, " ", bcolors.FAIL + "Succeeded! Error Detected.(now hack it!)" + bcolors.ENDC
+
                 else:
                         print "Attack Number:", at, " ", "Failed, no error detected."
 		
