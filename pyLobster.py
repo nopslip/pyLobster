@@ -16,6 +16,7 @@ import re
 def cmd_options():
 	parser = OptionParser()
 	parser.add_option("-f", dest="filename", help="file name to read url's from", metavar="url_list.txt")
+	parser.add_option("-M", dest="mode", help="set the output mode, defualt is stdout, options include ES for ElasticSearch and SQLite", metavar="mode") 
 	(options, args) = parser.parse_args()
 	return options.filename
 
@@ -206,13 +207,12 @@ def base_attack(a,at,url):
                 	write_error_html(url, a.text, at)
 
 def verbose(a,at,url, sErr):
-	print url 
-	print a.status_code
+	# print a.status_code
 	if sErr == True:
-                        print "Attack Number:", at, " ", bcolors.FAIL + "Succeeded! Error Detected.(now hack it!)" + bcolors.ENDC
+        	print "Attack Number:", at, " ", bcolors.FAIL + "Succeeded! Error Detected.(now hack it!)" + bcolors.ENDC
 
-                else:
-                        print "Attack Number:", at, " ", "Failed, no error detected."
+	else:
+                print "Attack Number:", at, " ", "Failed, no error detected."
 		
 
 class bcolors:
@@ -233,20 +233,19 @@ class bcolors:
 
 
 #File Write Defs
-#Check_one returned "0". Could be that URL is down, could be blip in internets. 
+#Check_one returned "0". Could be that URL is down, could be static of the internets. 
 def bad_url(url):
-	f = open('bad_url.txt','a')
+	f = open('bad_url.log','a')
 	f.writelines(url + "\n")
 	f.close()
 
-#if we recieve an error during attack request. This list should be run back through the lobster. 
 def attack_fail(url):
-	f = open('attackFail.txt','a')
+	f = open('attackFail.log','a')
 	f.writelines(url + "\n")
 	f.close()
 
 def error_500(url):
-	f = open('error_500.txt','a')
+	f = open('error_500.log','a')
 	f.writelines(url + '\n')
 	f.close()
 
@@ -256,10 +255,11 @@ def write_logfile(count,url,logfile):
 	f.close
 
 def check_1_fail(url):
-	f = open('write_fail.txt','a')
+	f = open('write_fail.log','a')
 	f.writelines(url + '\n')
 	f.close()
 
+# here we save off the HTML in which an error code has been detected
 def write_error_html(url, html, at):
 	prefix = 'http://' 
 	if url.startswith(prefix): 
