@@ -191,7 +191,8 @@ def base_attack(a,at,url):
 	db = None
 	# print a.headers['content-type']
 	params = a.headers
-        if a.headers['content-type'] != 'image/gif' and a.headers['content-type'] != 'image/png' and a.headers['content-type'] != 'image/jpg' and a.headers['content-type'] != 'application/pdf' and a.headers['content-type'] != 'image/jpeg':
+        #lets try to make sure its not a binary file of some sort
+	if a.headers['content-type'] != 'image/gif' and a.headers['content-type'] != 'image/png' and a.headers['content-type'] != 'image/jpg' and a.headers['content-type'] != 'application/pdf' and a.headers['content-type'] != 'image/jpeg':
         	try:
 			if a.text != None:
         	        	sErr, db = sql_error_check(url, a.text)
@@ -200,8 +201,15 @@ def base_attack(a,at,url):
 			print "can't be written as text" 
 		# ES is currently turned off, will re-emerge with command line switch and information on how to configure ES to take your data
 		# write_to_ES(url,a.status_code,at,params,sErr,db)
-                if sErr == True:
+                verbose(a,at,url,sErr)
+		if sErr == True:
                 	write_error_html(url, a.text, at)
+
+def verbose(a,at,url, sErr):
+	print url 
+	print a.status_code
+	print sErr
+
 
 #File Write Defs
 #Check_one returned "0". Could be that URL is down, could be blip in internets. 
