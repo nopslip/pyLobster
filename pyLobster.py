@@ -38,7 +38,7 @@ def check_one(url):
 		cookie = 2
                 return (status,cookie)
 
-# finally, lets throw some malformed http headers. In the future this should be randomized to blend in. 
+# finally, lets throw some malformed http headers. 
 def attack_loop(url,c):
 			attack_one(url)
 			# attack_two(url)
@@ -50,7 +50,8 @@ def attack_loop(url,c):
 			if c != None: 
 				attack_nine(url,c)
 
-# and the attacks
+# and the test requests 
+# this one throws the standard SQLinjection test of a ' as the useragent 
 def attack_one(url):
 	headers = {'User-Agent': '\''}	
 	at = 1
