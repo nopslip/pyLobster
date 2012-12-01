@@ -12,6 +12,7 @@ import simplejson as json
 import hashlib
 import datetime
 import re 
+import os.path
 
 def cmd_options():
 	parser = OptionParser()
@@ -267,9 +268,16 @@ def write_error_html(url, html, at):
 		url = url[len(prefix):] 
 	html = html.encode('ascii', 'replace')
 	fname = ("./gold/" + url + '_' + str(at))
+	ensure_dir(fname)
 	f = open(fname,'w+')
 	f.write(html + '\n')
 	f.close
+
+def ensure_dir(f):
+    d = os.path.dirname(f)
+    if not os.path.exists(d):
+        os.makedirs(d)
+
 
 #here we go
 def begin(url):
