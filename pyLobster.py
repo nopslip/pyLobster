@@ -18,6 +18,7 @@ def cmd_options():
 	parser = OptionParser()
 	parser.add_option("-f", dest="filename", help="file name to read url's from", metavar="url_list.txt")
 	parser.add_option("-M", dest="mode", help="set the output mode, defualt is stdout, options include ES for ElasticSearch and SQLite", metavar="mode") 
+	parser.add_option("--ifp", dest="ignore_fp", help="If we detect a SQL error on our inital (non-malicous) request it's very likely that the you get a False Positive for the given URL. by defualt, we will not test URL's with a high FP potential (better if running pyLobster against a list of URL's). If you would like to test the URL anyway set this switch.", metavar="ifp")
 	(options, args) = parser.parse_args()
 	return options.filename
 
@@ -26,13 +27,19 @@ def get_url():
 	url = raw_input()
 	return url    	
 
-# use Requests to grab status code of url. if the remote host does not respond the function will return a status_code of 0. This is to be expected and means we could not contact the remote host. if you want to know why that is you will need to edit defaults.py of the Requests module. on to the next...'''
+# use Requests to grab status code of url. if the remote host does not respond the function will return a status_code of 0. This is to be expected and means we could not contact the remote host. if you want to know why that is you will need to edit defaults.py of the Requests module. 
 def check_one(url):
 	headers = {'User-Agent': 'Mozilla/5.0'}
 	try:
 		r = requests.get(url, headers=headers, allow_redirects=False)  
 		# print "we recieved a status code of:" + str(r.status_code)
 		# print r.headers['set-cookie']
+		# print r.text
+		if there_is_no_binary(r) == True:
+			sErr, db = sql_error_check(url, r.text) 
+		if sErr == True:
+			print  bcolors.FAIL + "Error detected on inital request, false positive potential high!" + bcolors.ENDC + "\nYou can set the --ifp switch to ignore this warning and test the URL(s) anyway. URL not tested." 
+			return ("2000", "blah") 
 		return (r.status_code,r.headers['set-cookie'])
 	except (requests.ConnectionError, requests.Timeout):
 		status = 0
@@ -115,7 +122,7 @@ def attack_nine(url,c):
 	#take our cookie and use regEx to split out cookie value names, will be in array: m.group(x) where x is the corresponding () below. 0 is the inital whole match, 1 is good stuff, 2 is bunk. yeah, its confusing and could proablby be done better but it works. 
 	try:
 		# print c
-		m = re.match(r"(.*?=)(.*?[Tue|Mon|Wed|Thu|Fri|Sat|Sun],.*?,\s*|.*?,\s*|.*?)(.*?=|.*?)(.*?[Tue|Mon|Wed|Thu|Fri|Sat|Sun],.*?,\s*|.*?,\s*|.*?)(.*?=|.*?)(.*?[Tue|Mon|Wed|Thu|Fri|Sat|Sun],.*?,\s*|.*?,\s*|.*?)(.*?=|.*?)(.*?[Tue|Mon|Wed|Thu|Fri|Sat|Sun],.*?,\s*|.*?,\s*|.*?)(.*?=|.*?)(.*?[Tue|Mon|Wed|Thu|Fri|Sat|Sun],.*?,\s*|.*?,\s*|.*?)(.*?=|.*?)(.*?[Tue|Mon|Wed|Thu|Fri|Sat|Sun],.*?,\s*|.*?,\s*|.*?)(.*?=|.*?)(.*?=|.*?)(.*?[Tue|Mon|Wed|Thu|Fri|Sat|Sun],.*?,\s*|.*?,\s*|.*?)(.*?=|.*?)(.*?[Tue|Mon|Wed|Thu|Fri|Sat|Sun],.*?,\s*|.*?,\s*|.*?)(.*?=|.*?)(.*?[Tue|Mon|Wed|Thu|Fri|Sat|Sun],.*?,\s*|.*?,\s*|.*?).*", d1)
+		m = re.match(r"(.*?=)(.*?[Tue|Mon|Wed|Thu|Fri|Sat|Sun],.*?,\s*|.*?,\s*|.*?)(.*?=|.*?)(.*?[Tue|Mon|Wed|Thu|Fri|Sat|Sun],.*?,\s*|.*?,\s*|.*?)(.*?=|.*?)(.*?[Tue|Mon|Wed|Thu|Fri|Sat|Sun],.*?,\s*|.*?,\s*|.*?)(.*?=|.*?)(.*?[Tue|Mon|Wed|Thu|Fri|Sat|Sun],.*?,\s*|.*?,\s*|.*?)(.*?=|.*?)(.*?[Tue|Mon|Wed|Thu|Fri|Sat|Sun],.*?,\s*|.*?,\s*|.*?)(.*?=|.*?)(.*?[Tue|Mon|Wed|Thu|Fri|Sat|Sun],.*?,\s*|.*?,\s*|.*?)(.*?=|.*?)(.*?=|.*?)(.*?[Tue|Mon|Wed|Thu|Fri|Sat|Sun],.*?,\s*|.*?,\s*|.*?)(.*?=http://amazingwomenrock.com/adagencypackages/preview/118/component?no_html=1|.*?)(.*?[Tue|Mon|Wed|Thu|Fri|Sat|Sun],.*?,\s*|.*?,\s*|.*?)(.*?=|.*?)(.*?[Tue|Mon|Wed|Thu|Fri|Sat|Sun],.*?,\s*|.*?,\s*|.*?).*", d1)
 	except():
 		return 
 	#lets make a list of all our cookie names that the server sent to us. because of my janky regEx i had to get creative on how to get the right values in the list. skip 0, grab only odd number results (m.group()) that don't contain ";". fun!
@@ -145,12 +152,12 @@ def attack_nine(url,c):
 	
 		
 def sql_error_check(url, html):
-	#we must check the returned html for signs of possible SQLi. Database errors of course. To do this we use regEx
+	#we must check the returned html for signs of error based AQLi. 
 	#mysql Error
 	matchObj = re.search("you\shave\san\serror", html, re.M|re.I)
-	#msSql Error
+	#msSql Error (this does not work and needs to be removed)
 	matchObj2 = re.search("microsoft\sOLE\sDB\sProvider\sfor\sODBC\sDrivers\serror", html, re.M|re.I)
-	#Oracle ERror
+	#Oracle ERror (this does not work either and will be updated)
 	matchObj3 = re.search(":\squoted\sstring\snot\sproperly\sterminated", html, re.M|re.I)
 	if matchObj:
 		db = 'mysql'
@@ -195,8 +202,9 @@ def base_attack(a,at,url):
 	# print a.headers['content-type']
 	params = a.headers
         #lets try to make sure its not a binary file of some sort
-	if a.headers['content-type'] != 'image/gif' and a.headers['content-type'] != 'image/png' and a.headers['content-type'] != 'image/jpg' and a.headers['content-type'] != 'application/pdf' and a.headers['content-type'] != 'image/jpeg':
+	if there_is_no_binary(a) == True:
         	try:
+			# print a.text			
 			if a.text != None:
         	        	sErr, db = sql_error_check(url, a.text)
                 except():        	
@@ -207,6 +215,11 @@ def base_attack(a,at,url):
                 verbose(a,at,url,sErr)
 		if sErr == True:
                 	write_error_html(url, a.text, at)
+
+def there_is_no_binary(a):
+	if a.headers['content-type'] != 'image/gif' and a.headers['content-type'] != 'image/png' and a.headers['content-type'] != 'image/jpg' and a.headers['content-type'] != 'application/pdf' and a.headers['content-type'] != 'image/jpeg':
+		return True 
+	
 
 def verbose(a,at,url, sErr):
 	# print a.status_code
@@ -234,10 +247,18 @@ class bcolors:
         self.ENDC = ''
 
 
-#File Write Defs
+#write log Files 
+
 #Check_one returned "0". Could be that URL is down, could be static of the internets. 
 def bad_url(url):
 	f = open('bad_url.log','a')
+	f.writelines(url + "\n")
+	f.close()
+
+#we detected a SQL error on the inital request. While this site still may be vunerable to error base SQLi in the header fields, it should be manually tested because our detection methodology will likely give a False Postive here. 
+ 
+def false_positive_prone(url):
+	f = open('false_postive.log','a')
 	f.writelines(url + "\n")
 	f.close()
 
@@ -273,6 +294,7 @@ def write_error_html(url, html, at):
 	f.write(html + '\n')
 	f.close
 
+#when SQL error is detected we will save off the response HTML data for later examination. this will be written into folder ./gold. if folder doesn't exist, create it. 
 def ensure_dir(f):
     d = os.path.dirname(f)
     if not os.path.exists(d):
@@ -287,6 +309,9 @@ def begin(url):
 	if statusCode == 0:
 		bad_url(url)
 	
+	elif statusCode == "2000":
+			false_positive_prone(url)
+
 	elif statusCode == 500:
 			error_500(url)
 	
