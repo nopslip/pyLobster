@@ -40,6 +40,7 @@ def check_one(url):
 			sErr, db = sql_error_check(url, r.text) 
 		if sErr == True:
 			print  bcolors.FAIL + db + " error detected on inital request, false positive potential high!" + bcolors.ENDC + "\nYou can set the --ifp switch to ignore this warning and test the URL(s) anyway.\n URL not tested." 
+			write_fp_error(url, r.text)
 			return ("2000", "blah") 
 		return (r.status_code,r.headers['set-cookie'])
 	except (requests.ConnectionError, requests.Timeout):
@@ -315,7 +316,7 @@ def error_500(url):
 def write_logfile(count,url,logfile):
 	f = open(str(logfile),'a')
 	f.writelines(count + "  " + url+ '\n')
-	f.closedef 
+	f.close() 
 
 def check_1_fail(url):
 	f = open('write_fail.log','a')
@@ -332,7 +333,18 @@ def write_error_html(url, html, at):
 	ensure_dir(fname)
 	f = open(fname,'w+')
 	f.write(html + '\n')
-	f.close
+	f.close()
+
+def write_fp_html(url, html):
+	prefix = 'http://' 
+	if url.startswith(prefix): 
+		url = url[len(prefix):] 
+	html = html.encode('ascii', 'replace')
+	fname = ("./fp/" + url + '_')
+	ensure_dir(fname)
+	f = open(fname,'w+')
+	f.write(html + '\n')
+	f.close()
 
 #when SQL error is detected we will save off the response HTML data for later examination. this will be written into folder ./gold. if folder doesn't exist, create it. 
 def ensure_dir(f):
