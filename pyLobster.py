@@ -18,7 +18,8 @@ def cmd_options():
 	parser = OptionParser()
 	parser.add_option("-f", dest="filename", help="file name to read url's from", metavar="url_list.txt")
 	parser.add_option("-M", dest="mode", help="set the output mode, defualt is stdout, options include ES for ElasticSearch and SQLite", metavar="mode") 
-	parser.add_option("--ifp", dest="ignore_fp", help="If we detect a SQL error on our inital (non-malicous) request it's very likely that the you get a False Positive for the given URL. by defualt, we will not test URL's with a high FP potential (better if running pyLobster against a list of URL's). If you would like to test the URL anyway set this switch.", metavar="ifp")
+	parser.add_option("--ifp", dest="ifp", help="If we detect a SQL error on our inital (non-malicous) request it's very likely that you will get a False Positive for the given URL. by defualt, we will not test URL's with a high FP potential (better if running pyLobster against a large list of URL's). If you would like to test the URL anyway set this switch to yes.", metavar="no")
+	parser.add_option("--h", dest="header_mode", help="3 Options, all (not yet supported), smart (looks at what headers the website set and only tests those), minimal (only test common dynamic header fields, defualt), custom (pick fields you want to attack, not yet suppored)", metavar="minimal")
 	(options, args) = parser.parse_args()
 	return options.filename
 
@@ -159,7 +160,7 @@ def sql_error_check(url, html):
 	mysql1 = re.search("Warning.*supplied\sargument\sis\snot\sa\svalid\sMySQL\sresult", html, re.M|re.I)	
 	mysql2 = re.search("Warning.*mysql_.*\(\)", html, re.M|re.I)
 	#microsoft	
-	ms = re.search("microsoft\sOLE\sDB\sProvider\sfor\sODBC\sDrivers\serror", html, re.M|re.I)
+	ms = re.search("microsoft\sOLE\sDB\sProvider\sfor\sODBC\sDrivers\serror", html, re.M|re.I)filename = cmd_options()
 	ms1 = re.search("Microsoft\sOLE\sDB\sProvider\sfor\sSQL\sServer", html, re.M|re.I)
 	ms2 = re.search("\[Microsoft\]\[ODBC Microsoft Access Driver\] Syntax error", html, re.M|re.I)	
 	ms3 = re.search("Microsoft OLE DB Provider for ODBC Drivers.*\[Microsoft\]\[ODBC SQL Server Driver\]", html, re.M|re.I)	
@@ -247,9 +248,11 @@ def base_attack(a,at,url):
                 except():        	
 			print a.headers['content-type']
 			print "can't be written as text" 
-		# ES is currently turned off, will re-emerge with command line switch and information on how to configure ES to take your data
-		# write_to_ES(url,a.status_code,at,params,sErr,db)
-                verbose(a,at,url,sErr)
+		mode = cmd_options()		
+		if mode == ES:
+			write_to_ES(url,a.status_code,at,params,sErr,db)
+		else:                
+			verbose(a,at,url,sErr)
 		if sErr == True:
                 	write_error_html(url, a.text, at)
 
