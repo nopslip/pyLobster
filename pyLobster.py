@@ -45,8 +45,8 @@ def check_one(url):
 		if there_is_no_binary(r) == True:
 			sErr, db, err = sql_error_check(url, r.text) 
 		if sErr == True:
-			print  bcolors.FAIL + db + " error detected on inital request, false positive potential high!" + bcolors.ENDC + "\nYou can set the --ifp switch to ignore this warning and test the URL(s) anyway.\n URL not tested." 
-			write_fp_html(url, r.text, err)
+			print  bcolors.FAIL + err + " error detected on inital request, false positive potential high!" + bcolors.ENDC + "\nYou can set the --ifp switch to ignore this warning and test the URL(s) anyway.\n URL not tested." 
+			write_fp_html(url, r.text, db)
 			return ("2000", "blah") 
 		return (r.status_code,r.headers['set-cookie'])
 	except (requests.ConnectionError, requests.Timeout):
