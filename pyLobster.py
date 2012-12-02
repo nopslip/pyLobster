@@ -56,19 +56,19 @@ def check_one(url):
 
 # finally, lets throw some malformed http headers. 
 def attack_loop(url,c):
-			attack_one(url)
-			# attack_two(url)
-			# attack_three(url)
-			attack_four(url)
-			attack_five(url)
-			attack_six(url)	
+			a_1(url)
+			a_2(url)
+			a_3(url)
+			a_4(url)
+			a_5(url)
+			a_6(url)	
 			# get cookies. have pinic 
 			if c != None: 
-				attack_nine(url,c)
+				a_9(url,c)
 
 # and the test requests 
 # this one throws the standard SQLinjection test of a ' as the useragent 
-def attack_one(url):
+def a_1(url):
 	headers = {'User-Agent': '\''}	
 	at = 1
 	gtg = 0
@@ -80,9 +80,32 @@ def attack_one(url):
 	if gtg == 1:
 		base_attack(a,at,url)
 	                      
+def a_2(url):
 
+	headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)', 'Host': '\''}	
+	at = 2
+	gtg = 0
+	try: 
+   		a = requests.get(url, headers=headers,allow_redirects=False)
+		gtg = 1
+	except (requests.ConnectionError, requests.Timeout):
+		attack_fail(url)  	
+	if gtg == 1:
+		base_attack(a,at,url)
 
-def attack_four(url):
+def a_3(url):
+	headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)', 'From': '\''}	
+	at = 3
+	gtg = 0
+	try: 
+   		a = requests.get(url, headers=headers,allow_redirects=False)
+		gtg = 1
+	except (requests.ConnectionError, requests.Timeout):
+		attack_fail(url)  	
+	if gtg == 1:
+		base_attack(a,at,url)
+
+def a_4(url):
         headers = {'User-Agent': '\"'}
         at = 4
 	gtg = 0
@@ -95,7 +118,7 @@ def attack_four(url):
 	if gtg == 1:
 		base_attack(a,at,url)
 
-def attack_five(url):
+def a_5(url):
 	headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)','X-Forwarded-For': '\''}
 	at = 5
 	gtg = 0
@@ -108,7 +131,7 @@ def attack_five(url):
 	if gtg == 1:
 		base_attack(a,at,url)
 
-def attack_six(url):
+def a_6(url):
         headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)','Referer': '\''}
         at = 6
 	gtg = 0
@@ -123,7 +146,7 @@ def attack_six(url):
 
 
 #the cookie attack. Premise is simple, send SQLi (or other bogus cookies) back to webserver, parse the returned HTML (sql_error_check) to see if there is an error thrown from the server.
-def attack_nine(url,c):	
+def a_9(url,c):	
 	gtg = 0
 	at = 9	
 	d1 = str(c)
@@ -240,7 +263,9 @@ def base_attack(a,at,url):
 		else:                
 			std_out(a,at,url,sErr,err)
 		if sErr == True:
-                	write_error_html(url, a.text, at)
+                	write_error_html(url, a.text, at, db)
+		if sErr == False and a.status_code == 500:
+			write_500_html(url, a.text, at, db)
 
 def there_is_no_binary(a):
 	if a.headers['content-type'] != 'image/gif' and a.headers['content-type'] != 'image/png' and a.headers['content-type'] != 'image/jpg' and a.headers['content-type'] != 'application/pdf' and a.headers['content-type'] != 'image/jpeg':
@@ -309,18 +334,20 @@ def check_1_fail(url):
 	f.writelines(url + '\n')
 	f.close()
 
+# Write HTML Def's
 # here we save off the HTML in which an error code has been detected
-def write_error_html(url, html, at):
+def write_error_html(url, html, at, db):
 	prefix = 'http://' 
 	if url.startswith(prefix): 
 		url = url[len(prefix):] 
 	html = html.encode('ascii', 'replace')
-	fname = ("./gold/" + url + '_' + str(at))
+	fname = ("./gold/" + url + '_' + str(at) + "_" + str(db))
 	ensure_dir(fname)
 	f = open(fname,'w+')
 	f.write(html + '\n')
 	f.close()
 
+#IF we detect error on first (legit) request then its likely we are going to FP. we will write url to log (for later processing) and also write HTML
 def write_fp_html(url, html, err):
 	prefix = 'http://' 
 	if url.startswith(prefix): 
@@ -332,7 +359,18 @@ def write_fp_html(url, html, err):
 	f.write(html + '\n')
 	f.close()
 
-#when SQL error is detected we will save off the response HTML data for later examination. this will be written into folder ./gold. if folder doesn't exist, create it. 
+def write_500_html(url, html, at, db):
+	prefix = 'http://' 
+	if url.startswith(prefix): 
+		url = url[len(prefix):] 
+	html = html.encode('ascii', 'replace')
+	fname = ("./500/" + url + '_' + str(at) + "_" + str(db))
+	ensure_dir(fname)
+	f = open(fname,'w+')
+	f.write(html + '\n')
+	f.close()
+
+# check to see if dir exists, if not create it
 def ensure_dir(f):
     d = os.path.dirname(f)
     if not os.path.exists(d):
