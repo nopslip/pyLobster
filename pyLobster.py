@@ -38,7 +38,7 @@ def check_one(url):
 		if there_is_no_binary(r) == True:
 			sErr, db = sql_error_check(url, r.text) 
 		if sErr == True:
-			print  bcolors.FAIL + "Error detected on inital request, false positive potential high!" + bcolors.ENDC + "\nYou can set the --ifp switch to ignore this warning and test the URL(s) anyway. URL not tested." 
+			print  bcolors.FAIL + db + " error detected on inital request, false positive potential high!" + bcolors.ENDC + "\nYou can set the --ifp switch to ignore this warning and test the URL(s) anyway.\n URL not tested." 
 			return ("2000", "blah") 
 		return (r.status_code,r.headers['set-cookie'])
 	except (requests.ConnectionError, requests.Timeout):
@@ -153,21 +153,57 @@ def attack_nine(url,c):
 	
 		
 def sql_error_check(url, html):
-	#we must check the returned html for signs of error based AQLi. 
-	#mysql Error
-	matchObj = re.search("you\shave\san\serror", html, re.M|re.I)
-	#msSql Error (this does not work and needs to be removed)
-	matchObj2 = re.search("microsoft\sOLE\sDB\sProvider\sfor\sODBC\sDrivers\serror", html, re.M|re.I)
-	#Oracle ERror (this does not work either and will be updated)
-	matchObj3 = re.search(":\squoted\sstring\snot\sproperly\sterminated", html, re.M|re.I)
-	if matchObj:
+	#regex's to check for errors 
+	#mysql
+	mysql = re.search("you\shave\san\serror", html, re.M|re.I)
+	mysql1 = re.search("Warning.*supplied\sargument\sis\snot\sa\svalid\sMySQL\sresult", html, re.M|re.I)	
+	mysql2 = re.search("Warning.*mysql_.*\(\)", html, re.M|re.I)
+	#microsoft	
+	ms = re.search("microsoft\sOLE\sDB\sProvider\sfor\sODBC\sDrivers\serror", html, re.M|re.I)
+	ms1 = re.search("Microsoft\sOLE\sDB\sProvider\sfor\sSQL\sServer", html, re.M|re.I)
+	ms2 = re.search("\[Microsoft\]\[ODBC Microsoft Access Driver\] Syntax error", html, re.M|re.I)	
+	ms3 = re.search("Microsoft OLE DB Provider for ODBC Drivers.*\[Microsoft\]\[ODBC SQL Server Driver\]", html, re.M|re.I)	
+	ms4 = re.search("Microsoft OLE DB Provider for ODBC Drivers.*\[Microsoft\]\[ODBC Access Driver\]", html, re.M|re.I)
+	ms5 = re.search("Microsoft JET Database Engine", html, re.M|re.I)
+	ms6 = re.search("ADODB.Command.*error", html, re.M|re.I)
+	ms7 = re.search("Microsoft VBScript runtime", html, re.M|re.I)
+	ms8 = re.search("Type mismatch | VBScript / ASP error", html, re.M|re.I)
+	ms9 = re.search("Server Error.*System\.Data\.OleDb\.OleDbException", html, re.M|re.I)
+	#Oracle bitch	
+	oracle = re.search(":\squoted\sstring\snot\sproperly\sterminated", html, re.M|re.I)
+	oracle1 = re.search("ORA-[0-9][0-9][0-9][0-9]", html, re.M|re.I)
+	#some Java	
+	java = re.search("javax\.servlet\.ServletException", html, re.M|re.I)	
+	#JSP
+	jsp = re.search("Invalid SQL statement or JDBC", html, re.M|re.I)
+	#misc
+	misc = re.search("org\.apache\.jasper\.JasperException", html, re.M|re.I)
+	#php
+	php = re.search("Warning.*failed to open stream", html, re.M|re.I)
+	php1 = re.search("Fatal Error.*on line", html, re.M|re.I)
+	php2 = re.search("Fatal Error.*at line", html, re.M|re.I)
+	
+	#ok, now we actually check the regex's
+	if mysql or mysql1 or mysql2:
 		db = 'mysql'
 		return (True, db) 
-	if matchObj2:
+	if ms or ms1 or ms2 or ms3 or ms4 or ms5 or ms6 or ms7 or ms8 or ms9:
 		db = 'mssql'
 		return (True, db)	
-	if matchObj3:
+	if oracle or oracle1:
 		db = 'oracle'
+		return (True, db)
+	if java:
+		db = 'java'
+		return (True, db)
+	if jsp:
+		db = 'jsp'
+		return (True, db)
+	if misc:
+		db = 'misc'
+		return (True, db)
+	if php or php1 or php2:
+		db = 'php'
 		return (True, db)
 	no = None 
 	return (False, no)
