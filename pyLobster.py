@@ -160,7 +160,7 @@ def sql_error_check(url, html):
 	mysql1 = re.search("Warning.*supplied\sargument\sis\snot\sa\svalid\sMySQL\sresult", html, re.M|re.I)	
 	mysql2 = re.search("Warning.*mysql_.*\(\)", html, re.M|re.I)
 	#microsoft	
-	ms = re.search("microsoft\sOLE\sDB\sProvider\sfor\sODBC\sDrivers\serror", html, re.M|re.I)filename = cmd_options()
+	ms = re.search("microsoft\sOLE\sDB\sProvider\sfor\sODBC\sDrivers\serror", html, re.M|re.I)
 	ms1 = re.search("Microsoft\sOLE\sDB\sProvider\sfor\sSQL\sServer", html, re.M|re.I)
 	ms2 = re.search("\[Microsoft\]\[ODBC Microsoft Access Driver\] Syntax error", html, re.M|re.I)	
 	ms3 = re.search("Microsoft OLE DB Provider for ODBC Drivers.*\[Microsoft\]\[ODBC SQL Server Driver\]", html, re.M|re.I)	
