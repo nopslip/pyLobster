@@ -17,30 +17,36 @@ import os.path
 def cmd_options():
 	parser = OptionParser()
 	parser.add_option("-f", dest="filename", help="file name to read url's from", metavar="url_list.txt")
-	parser.add_option("-M", dest="mode", help="set the output mode, defualt is stdout, options include ES for ElasticSearch and SQLite", default="STDout") 
-	parser.add_option("--ifp", action="store_true", help="If we detect a SQL error on our inital (non-malicous) request it's very likely that you will get a False Positive for the given URL. by defualt, we will not test URL's with a high FP potential (better if running pyLobster against a large list of URL's). If you would like to test the URL anyway set this switch to yes.", metavar="no")
+	parser.add_option("-M", dest="mode", help="set the output mode, defualt is stdout, options include ES for ElasticSearch and SQLite for SQLite", default="STDout") 
+	parser.add_option("--ifp", action="store_true", help="If we detect a SQL error on our inital (non-malicous) request it's very likely that you will get a False Positive for the given URL. by defualt (--ifp notset), we will not test URL's with a high FP potential (better if running pyLobster against a large list of URL's). If you would like to test the URL anyway set this switch")
 	parser.add_option("--h", dest="header_mode", help="3 Options, all (not yet supported), smart (looks at what headers the website set and only tests those), minimal (only test common dynamic header fields, defualt), custom (pick fields you want to attack, not yet suppored)", metavar="minimal")
+	parser.add_option("-v", action="store_true", help="show verbose output. not recommend when running with the -f option")
 	(options, args) = parser.parse_args()
-	return (options.filename, options.mode)
+	return (options.filename, options.mode, options.v)
 
 def get_url():
 	print "what url would you like teh Lobster to visit?"
 	url = raw_input()
 	return url    	
 
-# use Requests to grab status code of url. if the remote host does not respond the function will return a status_code of 0. This is to be expected and means we could not contact the remote host. if you want to know why that is you will need to edit defaults.py of the Requests module. 
+# use Requests to grab status code of url. if the remote host does not respond the function will return a status_code of 0. This is to be expected and means we could not contact the remote host. if you want to know why that is you may be able to edit defaults.py of the Requests module to gather more informaiton. 
 def check_one(url):
 	headers = {'User-Agent': 'Mozilla/5.0'}
 	try:
 		r = requests.get(url, headers=headers, allow_redirects=False)  
-		# print "we recieved a status code of:" + str(r.status_code)
-		# print r.headers['set-cookie']
-		# print r.text
+		filename, mode, noise = cmd_options()		
+		if noise:
+			print "we recieved a status code of:" + str(r.status_code)
+			print bcolors.HEADER + "_.::Cookie::._\n" + bcolors.ENDC 
+			print r.headers['set-cookie']
+			print bcolors.OKBLUE + "__.::HTML Data::.__\n" + bcolors.ENDC 
+			print r.text
+	
 		if there_is_no_binary(r) == True:
-			sErr, db = sql_error_check(url, r.text) 
+			sErr, db, err = sql_error_check(url, r.text) 
 		if sErr == True:
 			print  bcolors.FAIL + db + " error detected on inital request, false positive potential high!" + bcolors.ENDC + "\nYou can set the --ifp switch to ignore this warning and test the URL(s) anyway.\n URL not tested." 
-			write_fp_error(url, r.text)
+			write_fp_html(url, r.text, err)
 			return ("2000", "blah") 
 		return (r.status_code,r.headers['set-cookie'])
 	except (requests.ConnectionError, requests.Timeout):
@@ -152,64 +158,43 @@ def attack_nine(url,c):
 # def attack_x(url):
 #	headers = {'User-Agent': '<script>window.location = "http://xxxx"</script>'}
 
-	
+def load_sauce():
+	sauce = {}
+	sauce[0] = "you\shave\san\serror"
+	sauce[1] = "Warning.*supplied\sargument\sis\snot\sa\svalid\sMySQL\sresult"
+	sauce[2] = "Warning.*mysql_.*\(\)"
+	sauce[4] = "microsoft\sOLE\sDB\sProvider\sfor\sODBC\sDrivers\serror"
+	sauce[5] = "Microsoft\sOLE\sDB\sProvider\sfor\sSQL\sServer"
+	sauce[6] = "\[Microsoft\]\[ODBC Microsoft Access Driver\] Syntax error"
+	sauce[7] = "Microsoft OLE DB Provider for ODBC Drivers.*\[Microsoft\]\[ODBC SQL Server Driver\]"
+	sauce[8] = "Microsoft OLE DB Provider for ODBC Drivers.*\[Microsoft\]\[ODBC Access Driver\]"
+	sauce[9] = "Microsoft JET Database Engine"
+	sauce[10] = "ADODB.Command.*error"
+	sauce[11] = "Microsoft VBScript runtime"
+	sauce[12] = "Type mismatch | VBScript / ASP error"
+	sauce[13] = "Server Error.*System\.Data\.OleDb\.OleDbException"
+	sauce[14] = ":\squoted\sstring\snot\sproperly\sterminated"
+	sauce[15] = "ORA-[0-9][0-9][0-9][0-9]"
+	sauce[16] = "Invalid SQL statement or JDBC"
+	sauce[17] = "org\.apache\.jasper\.JasperException"
+	sauce[18] = "Warning.*failed to open stream"
+	sauce[19] = "Fatal Error.*on line"
+	sauce[20] = "Fatal Error.*at line"	
+	return sauce
 		
 def sql_error_check(url, html):
-	#regex's to check for errors 
-	#mysql
-	mysql = re.search("you\shave\san\serror", html, re.M|re.I)
-	mysql1 = re.search("Warning.*supplied\sargument\sis\snot\sa\svalid\sMySQL\sresult", html, re.M|re.I)	
-	mysql2 = re.search("Warning.*mysql_.*\(\)", html, re.M|re.I)
-	#microsoft	
-	ms = re.search("microsoft\sOLE\sDB\sProvider\sfor\sODBC\sDrivers\serror", html, re.M|re.I)
-	ms1 = re.search("Microsoft\sOLE\sDB\sProvider\sfor\sSQL\sServer", html, re.M|re.I)
-	ms2 = re.search("\[Microsoft\]\[ODBC Microsoft Access Driver\] Syntax error", html, re.M|re.I)	
-	ms3 = re.search("Microsoft OLE DB Provider for ODBC Drivers.*\[Microsoft\]\[ODBC SQL Server Driver\]", html, re.M|re.I)	
-	ms4 = re.search("Microsoft OLE DB Provider for ODBC Drivers.*\[Microsoft\]\[ODBC Access Driver\]", html, re.M|re.I)
-	ms5 = re.search("Microsoft JET Database Engine", html, re.M|re.I)
-	ms6 = re.search("ADODB.Command.*error", html, re.M|re.I)
-	ms7 = re.search("Microsoft VBScript runtime", html, re.M|re.I)
-	ms8 = re.search("Type mismatch | VBScript / ASP error", html, re.M|re.I)
-	ms9 = re.search("Server Error.*System\.Data\.OleDb\.OleDbException", html, re.M|re.I)
-	#Oracle bitch	
-	oracle = re.search(":\squoted\sstring\snot\sproperly\sterminated", html, re.M|re.I)
-	oracle1 = re.search("ORA-[0-9][0-9][0-9][0-9]", html, re.M|re.I)
-	#some Java	
-	java = re.search("javax\.servlet\.ServletException", html, re.M|re.I)	
-	#JSP
-	jsp = re.search("Invalid SQL statement or JDBC", html, re.M|re.I)
-	#misc
-	misc = re.search("org\.apache\.jasper\.JasperException", html, re.M|re.I)
-	#php
-	php = re.search("Warning.*failed to open stream", html, re.M|re.I)
-	php1 = re.search("Fatal Error.*on line", html, re.M|re.I)
-	php2 = re.search("Fatal Error.*at line", html, re.M|re.I)
 	
-	#ok, now we actually check the regex's
-	if mysql or mysql1 or mysql2:
-		db = 'mysql'
-		return (True, db) 
-	if ms or ms1 or ms2 or ms3 or ms4 or ms5 or ms6 or ms7 or ms8 or ms9:
-		db = 'mssql'
-		return (True, db)	
-	if oracle or oracle1:
-		db = 'oracle'
-		return (True, db)
-	if java:
-		db = 'java'
-		return (True, db)
-	if jsp:
-		db = 'jsp'
-		return (True, db)
-	if misc:
-		db = 'misc'
-		return (True, db)
-	if php or php1 or php2:
-		db = 'php'
-		return (True, db)
+	sauce = {} 
+	sauce = load_sauce()
+	
+	for i in sauce:
+		objMatch = re.search(sauce[i], html, re.M|re.I)
+		if objMatch:
+			return(True, i , sauce[i])
 	no = None 
-	return (False, no)
+	return (False, no, i)
 
+	
 # push header data to ElasticSeach Index
 def write_to_ES(url,status,at,params,sErr,db):
 	#for hashing url
@@ -245,15 +230,15 @@ def base_attack(a,at,url):
         	try:
 			# print a.text			
 			if a.text != None:
-        	        	sErr, db = sql_error_check(url, a.text)
+        	        	sErr, db, err = sql_error_check(url, a.text)
                 except():        	
 			print a.headers['content-type']
 			print "can't be written as text" 
-		filename, mode = cmd_options()		
+		filename, mode, noise = cmd_options()		
 		if mode == "ES":
 			write_to_ES(url,a.status_code,at,params,sErr,db)
 		else:                
-			verbose(a,at,url,sErr)
+			std_out(a,at,url,sErr,err)
 		if sErr == True:
                 	write_error_html(url, a.text, at)
 
@@ -262,10 +247,11 @@ def there_is_no_binary(a):
 		return True 
 	
 
-def verbose(a,at,url, sErr):
+def std_out(a,at,url, sErr, err):
 	# print a.status_code
 	if sErr == True:
-        	print "Attack Number:", at, " ", bcolors.FAIL + "Succeeded! Error Detected.(now hack it!)" + bcolors.ENDC
+        	print "Attack Number:", at, " ", bcolors.FAIL + "Succeeded! Error Caught by Regex: " + bcolors.ENDC + "\"" + str(err) + "\"" 
+		print bcolors.OKBLUE + "\n..o0(nowHack)0o..\n" + bcolors.ENDC
 
 	else:
                 print "Attack Number:", at, " ", "Failed, no error detected."
@@ -335,12 +321,12 @@ def write_error_html(url, html, at):
 	f.write(html + '\n')
 	f.close()
 
-def write_fp_html(url, html):
+def write_fp_html(url, html, err):
 	prefix = 'http://' 
 	if url.startswith(prefix): 
 		url = url[len(prefix):] 
 	html = html.encode('ascii', 'replace')
-	fname = ("./fp/" + url + '_')
+	fname = ("./fp/" + url + '_' + str(err))
 	ensure_dir(fname)
 	f = open(fname,'w+')
 	f.write(html + '\n')
@@ -372,7 +358,7 @@ def begin(url):
     
 #main yo
 def main():
-	filename, Mode = cmd_options() 
+	filename, Mode , noise = cmd_options() 
 	
 	if filename == None: # then a list was not specfied
 		url = get_url() # request user input, return status code		
