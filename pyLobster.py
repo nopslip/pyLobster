@@ -41,7 +41,7 @@ def check_one(url):
 			print r.headers['set-cookie']
 			print bcolors.OKBLUE + "__.::HTML Data::.__\n" + bcolors.ENDC 
 			print r.text
-	
+			
 		if there_is_no_binary(r) == True:
 			sErr, db, err = sql_error_check(url, r.text) 
 		if sErr == True:
@@ -61,13 +61,19 @@ def attack_loop(url,c):
 			a_3(url)
 			a_4(url)
 			a_5(url)
-			a_6(url)	
-			# get cookies. have pinic 
+			a_6(url)
+			a_7(url)
+			a_8(url)
+			#Don't test cookies if the server didn't set any 
 			if c != None: 
 				a_9(url,c)
-
+			a_10(url)
+			a_11(url)
+			if c != None:
+				a_12(url,c)
 # and the test requests 
 # this one throws the standard SQLinjection test of a ' as the useragent 
+
 def a_1(url):
 	headers = {'User-Agent': '\''}	
 	at = 1
@@ -144,6 +150,56 @@ def a_6(url):
 	if gtg == 1:
 		base_attack(a,at,url)
 
+def a_7(url):
+
+	headers = {'User-Agent': ';'}	
+	at = 7
+	gtg = 0
+	try: 
+   		a = requests.get(url, headers=headers,allow_redirects=False)
+		gtg = 1
+	except (requests.ConnectionError, requests.Timeout):
+		attack_fail(url)  	
+	if gtg == 1:
+		base_attack(a,at,url)
+
+def a_8(url):
+	headers = {'User-Agent': 'Mozilla/4.2 (X12; Linux x86_64)', 'Host': ';'}	
+	at = 8
+	gtg = 0
+	try: 
+   		a = requests.get(url, headers=headers,allow_redirects=False)
+		gtg = 1
+	except (requests.ConnectionError, requests.Timeout):
+		attack_fail(url)  	
+	if gtg == 1:
+		base_attack(a,at,url)
+
+def a_10(url):
+	headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)','X-Forwarded-For': ';'}
+	at = 10
+	gtg = 0
+	try: 
+   		a = requests.get(url, headers=headers,allow_redirects=False)
+		gtg = 1
+	except (requests.ConnectionError, requests.Timeout):
+		attack_fail(url)  	
+	
+	if gtg == 1:
+		base_attack(a,at,url)
+
+def a_11(url):
+        headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)','Referer': ';'}
+        at = 11
+	gtg = 0
+        try: 
+   		a = requests.get(url, headers=headers,allow_redirects=False)
+		gtg = 1
+	except (requests.ConnectionError, requests.Timeout):
+		attack_fail(url)  	
+	
+	if gtg == 1:
+		base_attack(a,at,url)
 
 #the cookie attack. Premise is simple, send SQLi (or other bogus cookies) back to webserver, parse the returned HTML (sql_error_check) to see if there is an error thrown from the server.
 def a_9(url,c):	
@@ -177,6 +233,40 @@ def a_9(url,c):
 	
 	if gtg == 1:
 		base_attack(a,at,url)
+
+def a_12(url,c):	
+	gtg = 0
+	at = 12	
+	d1 = str(c)
+	#take our cookie and use regEx to split out cookie value names, will be in array: m.group(x) where x is the corresponding () below. 0 is the inital whole match, 1 is good stuff, 2 is bunk. yeah, its confusing and could proablby be done better but it works. 
+	try:
+		# print c
+		m = re.match(r"(.*?=)(.*?[Tue|Mon|Wed|Thu|Fri|Sat|Sun],.*?,\s*|.*?,\s*|.*?)(.*?=|.*?)(.*?[Tue|Mon|Wed|Thu|Fri|Sat|Sun],.*?,\s*|.*?,\s*|.*?)(.*?=|.*?)(.*?[Tue|Mon|Wed|Thu|Fri|Sat|Sun],.*?,\s*|.*?,\s*|.*?)(.*?=|.*?)(.*?[Tue|Mon|Wed|Thu|Fri|Sat|Sun],.*?,\s*|.*?,\s*|.*?)(.*?=|.*?)(.*?[Tue|Mon|Wed|Thu|Fri|Sat|Sun],.*?,\s*|.*?,\s*|.*?)(.*?=|.*?)(.*?[Tue|Mon|Wed|Thu|Fri|Sat|Sun],.*?,\s*|.*?,\s*|.*?)(.*?=|.*?)(.*?=|.*?)(.*?[Tue|Mon|Wed|Thu|Fri|Sat|Sun],.*?,\s*|.*?,\s*|.*?)(.*?=|.*?)(.*?[Tue|Mon|Wed|Thu|Fri|Sat|Sun],.*?,\s*|.*?,\s*|.*?)(.*?=|.*?)(.*?[Tue|Mon|Wed|Thu|Fri|Sat|Sun],.*?,\s*|.*?,\s*|.*?).*", d1)
+
+	except():
+		return 
+	#lets make a list of all our cookie names that the server sent to us. because of my janky regEx i had to get creative on how to get the right values in the list. skip 0, grab only odd number results (m.group()) that don't contain ";". fun!
+	clist =[]
+	for i in range (1,15):
+		if i & 1: 		
+			if re.search(r".*?;",m.group(i)) == None:
+				clist.append(m.group(i).rstrip('='))
+	headers = {'User-Agent': 'Mozilla/4.2'}
+        #lets create our cookie dict/array and add a value for each cookie/key
+        cookies = {}
+	for name in clist:
+		cookies[name] = ';' 
+	#ok, time to send our malicious cookies back to the server. 
+	try: 
+   		a = requests.get(url, cookies=cookies, headers=headers, allow_redirects=False)
+		gtg = 1
+	except (requests.ConnectionError, requests.Timeout):
+		attack_fail(url)  	
+	
+	if gtg == 1:
+		base_attack(a,at,url)
+
+
 
 # def attack_x(url):
 #	headers = {'User-Agent': '<script>window.location = "http://xxxx"</script>'}
@@ -213,9 +303,10 @@ def sql_error_check(url, html):
 	for i in sauce:
 		objMatch = re.search(sauce[i], html, re.M|re.I)
 		if objMatch:
-			return(True, i , sauce[i])
-	no = None 
-	return (False, no, i)
+			return(True, i, sauce[i])
+	no = None
+	no1 = None 
+	return (False, no, no1)
 
 	
 # push header data to ElasticSeach Index
@@ -359,6 +450,7 @@ def write_fp_html(url, html, err):
 	f.write(html + '\n')
 	f.close()
 
+#This is part our learning phase and is on by defualt right now but should get a switch someday. If we made it through check_one with out an Error continued on to base_attack and didn't get a regEx error match but DID get a 500. we save off the HTML to see what the error is and see if it makes sense to create a regEx for it. 
 def write_500_html(url, html, at, db):
 	prefix = 'http://' 
 	if url.startswith(prefix): 
