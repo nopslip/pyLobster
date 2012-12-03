@@ -1,11 +1,11 @@
---pyLobster--
+pyLobster
 =============
 Used to audit web servers and applications in how they process HTTP Headers. It sends a series of GET requests with custom crafted HTML Headers and then looks for anomalies (regex's for known errors) in the response data. Tests can reveal SQL Injection vunerabilites and various other issues that are of interest.   
 
 ****Disclaimer****
 Please make sure that you have the necessary permissions from sites you intend to audit before running this tool. 
  
---Features--
+Features
 ============
 1. Basic Error based SQLi tests for:
 	User-Agent
@@ -18,7 +18,7 @@ Easy to add tests for any other fields.
 
 2. Output to Termial, SQLite, or JSON->ElasticSearch
 
---Usage--
+Usage
 ==========
 Show help file:
 
@@ -38,7 +38,7 @@ If you want to feed it a list of URL's (from burp export or something)
 check sampleList.txt for expected format
 
 
---Dependencies--
+Dependencies
 ================
 Tested on Python v 2.7.3 (hopefully works on 3+ too) 
 
@@ -54,7 +54,7 @@ Consider turning requests safe_mode on if you are having issues:
 
 
 
---Output Mode--
+Output Mode
 ===============
 can be set with the -m swtich
 
