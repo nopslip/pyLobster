@@ -56,6 +56,7 @@ def check_one(url):
 
 # finally, lets throw some malformed http headers. 
 def attack_loop(url,c):
+			send_footprint(url, get_footprint_key("key.txt"))
 			a_1(url)
 			a_2(url)
 			a_3(url)
@@ -265,6 +266,25 @@ def a_12(url,c):
 	
 	if gtg == 1:
 		base_attack(a,at,url)
+
+
+def send_footprint(url,key):
+        
+	fp = {}
+	fp[0] = {'User-Agent': key}
+        fp[1] = {'Referer': key}
+	fp[2] = {'Host': key}
+	fp[3] = {'User-Agent': 'goatMilk', 'X-Forwarded-For': key}
+	try:	
+        	for i in fp:   		
+			a = requests.get(url, headers=fp[i] , allow_redirects=False)
+	except (requests.ConnectionError, requests.Timeout):
+		print 'fuck! footprint fail' + url
+			
+	
+def get_footprint_key(filename):
+	with open(filename) as f:
+		return f.read()	
 
 
 
