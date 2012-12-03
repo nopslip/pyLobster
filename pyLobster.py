@@ -356,7 +356,7 @@ def base_attack(a,at,url):
 		if sErr == True:
                 	write_error_html(url, a.text, at, db)
 		if sErr == False and a.status_code == 500:
-			write_500_html(url, a.text, at, db)
+			write_500_html(url, a.text, at)
 
 def there_is_no_binary(a):
 	if a.headers['content-type'] != 'image/gif' and a.headers['content-type'] != 'image/png' and a.headers['content-type'] != 'image/jpg' and a.headers['content-type'] != 'application/pdf' and a.headers['content-type'] != 'image/jpeg':
@@ -451,12 +451,12 @@ def write_fp_html(url, html, err):
 	f.close()
 
 #This is part our learning phase and is on by defualt right now but should get a switch someday. If we made it through check_one with out an Error continued on to base_attack and didn't get a regEx error match but DID get a 500. we save off the HTML to see what the error is and see if it makes sense to create a regEx for it. 
-def write_500_html(url, html, at, db):
+def write_500_html(url, html, at):
 	prefix = 'http://' 
 	if url.startswith(prefix): 
 		url = url[len(prefix):] 
 	html = html.encode('ascii', 'replace')
-	fname = ("./500/" + url + '_' + str(at) + "_" + str(db))
+	fname = ("./500/" + url + '_' + str(at))
 	ensure_dir(fname)
 	f = open(fname,'w+')
 	f.write(html + '\n')
