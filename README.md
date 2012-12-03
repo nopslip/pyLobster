@@ -24,7 +24,7 @@ Show help file:
 
 python pyLobster.py -h 
 
-Run against a single URL:
+Run against a single URL:\n\n
 
 python pyLobster.py
 what url would you like teh Lobster to visit?
