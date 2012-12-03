@@ -22,18 +22,18 @@ Easy to add tests for any other fields.
 ==========
 Show help file:
 
-python pyLobster.py -h 
+    python pyLobster.py -h 
 
-Run against a single URL:\n\n
+Run against a single URL:
 
-python pyLobster.py
-what url would you like teh Lobster to visit?
-http://zacharywolff.com
+    python pyLobster.py
+    what url would you like teh Lobster to visit?
+    http://zacharywolff.com
 
 
 If you want to feed it a list of URL's (from burp export or something)
 
-  python pyLobster.py -f urlList.txt
+    python pyLobster.py -f urlList.txt
 
 check sampleList.txt for expected format
 
