@@ -14,7 +14,7 @@ import datetime
 import re 
 import os.path
 
-
+ogBytes = 0
 def get_url():
 	print "what url would you like teh Lobster to visit?"
 	url = raw_input()
@@ -25,20 +25,21 @@ def check_one(url):
 	headers = {'User-Agent': 'PyLobster v0.8'}
 	try:
 		r = requests.get(url, headers=headers, allow_redirects=False)  
-		filename, mode, noise, footprint, smart = cmd_options()		
+		filename, mode, noise, footprint, smart, fpok, bad, learn = cmd_options()		
+		global ogBytes
+		ogBytes	= r.headers['Content-Length']	
 		if noise:
 			print "we recieved a status code of:" + str(r.status_code)
 			print bcolors.HEADER + "__.::Cookie Set By Server::.__\n" + bcolors.ENDC 
 			print r.headers['set-cookie']
 			print bcolors.OKBLUE + "__.::HTML Data Returned::.__\n" + bcolors.ENDC 
 			print r.text
-			
 		if there_is_no_binary(r) == True:
 			sErr, db, err = sql_error_check(url, r.text) 
-		if sErr == True:
-			print  bcolors.FAIL + err + " error detected on inital request, false positive potential high!" + bcolors.ENDC + "\nYou can set the --ifp switch to ignore this warning and test the URL(s) anyway.\n URL not tested." 
+		if sErr == True and fpok != True:
+			print  bcolors.FAIL + err + " :: Error detected on inital request. False positive potential high!" + bcolors.ENDC + "\nYou can set the --fpok switch to ignore this warning and test the URL(s) anyway.\n" + bcolors.HEADER + "URL not tested." + bcolors.ENDC 
 			write_fp_html(url, r.text, db)
-			return ("2000", "blah") 
+			return ("2000", "ghost", "variable") 
 		return (r.status_code,r.headers['set-cookie'], r.headers)
 	except (requests.ConnectionError, requests.Timeout):
 		status = 0
@@ -47,7 +48,7 @@ def check_one(url):
 
 # finally, lets throw some malformed http headers. 
 def attack_loop(url, c, headers):
-			filename, mode, noise, footprint, smart = cmd_options()
+			filename, mode, noise, footprint, smart, fpok, bad, learn = cmd_options()
 			if footprint:
 				send_footprint(url, get_footprint_key("key.txt"))
 			test_url(url, set_test_array(headers))			
@@ -68,7 +69,7 @@ def set_test_array(h):
 	test[8] = {'User-Agent': 'PyLobster v0.8', 'Host': ';'}
 	test[10] = {'User-Agent': 'PyLobster v0.8','X-Forwarded-For': ';'}
 	test[11] = {'User-Agent': 'PyLobster v0.8','Referer': ';'}
-	filename, mode, noise, footprint, smart = cmd_options()
+	filename, mode, noise, footprint, smart, fpok, bad, learn = cmd_options()
 	if smart:
 		c = 13 
 		for z in h:
@@ -80,7 +81,7 @@ def set_test_array(h):
 	return test
 
 def test_url(url, test):
-	filename, mode, noise, footprint, smart = cmd_options()		
+	filename, mode, noise, footprint, smart, fpok, bad, learn = cmd_options()		
 	if noise:	
 		print bcolors.HEADER + "Full Arrry of Requests to be Sent\n" + bcolors.ENDC
 		print test
@@ -254,9 +255,8 @@ def write_to_ES(url,status,at,params,sErr,db):
 def base_attack(a,at,url):
 	sErr = None
 	db = None
-	# print a.headers['content-type']
 	params = a.headers
-	filename, mode, noise, footprint, smart = cmd_options()
+	filename, mode, noise, footprint, smart, fpok, bad, learn = cmd_options()
 	#lets try to make sure its not a binary file of some sort
 	if there_is_no_binary(a) == True:
         	try:
@@ -266,16 +266,27 @@ def base_attack(a,at,url):
                 except():        	
 			print a.headers['content-type']
 			print "can't be written as text" 
-		filename, mode, noise, footprint, smart = cmd_options()		
 		if mode == "ES":
 			write_to_ES(url,a.status_code,at,params,sErr,db)
 		else:                
 			std_out(a,at,url,sErr,err)
 		if sErr == True:
                 	write_error_html(url, a.text, at, db)
+		if bad == True and sErr == False:
+			find_byte_anomalies(a,at,url, noise)
 		if sErr == False and a.status_code == 500:
 			write_500_html(url, a.text, at)
 
+def find_byte_anomalies(a, at, url, noise):
+		tbv = a.headers['content-Length']
+		if noise:
+			print "Legit Bytes: " + str(ogBytes) 
+			print "Attack: "  + str(at) + " Bytes: " + tbv 
+		highB = int(ogBytes) + 150
+		lowB = int(ogBytes) - 150
+		if int(tbv) >= int(highB) or int(tbv) <= int(lowB):
+			write_byte_anomaly(url, a.text, at, ogBytes, tbv, a.status_code)
+	
 def there_is_no_binary(a):
 	if a.headers['content-type'] != 'image/gif' and a.headers['content-type'] != 'image/png' and a.headers['content-type'] != 'image/jpg' and a.headers['content-type'] != 'application/pdf' and a.headers['content-type'] != 'image/jpeg':
 		return True 
@@ -380,6 +391,17 @@ def write_500_html(url, html, at):
 	f.write(html + '\n')
 	f.close()
 
+def write_byte_anomaly(url, html, at, o, a, s):
+	prefix = 'http://' 
+	if url.startswith(prefix): 
+		url = url[len(prefix):] 
+	html = html.encode('ascii', 'replace')
+	fname = ("./byte_anom/" + url + '_' + str(at) + "_" + str(o) + "_" + str(a) + "_" + "sc" + str(s))
+	ensure_dir(fname)
+	f = open(fname,'w+')
+	f.write(html + '\n')
+	f.close()
+
 # check to see if dir exists, if not create it
 def ensure_dir(f):
     d = os.path.dirname(f)
@@ -406,7 +428,7 @@ def begin(url):
     
 #main yo
 def main():
-	filename, Mode , noise, footprint, smart = cmd_options() 
+	filename, Mode , noise, footprint, smart, fpok, bad, learn = cmd_options() 
 	
 	if filename == None: # then a list was not specfied
 		url = get_url() # request user input, return status code		
@@ -430,12 +452,14 @@ def cmd_options():
 	parser = OptionParser()
 	parser.add_option("-f", dest="filename", help="file name to read url's from", metavar="url_list.txt")
 	parser.add_option("-M", dest="mode", help="set the output mode, defualt is stdout, options include ES for ElasticSearch and SQLite for SQLite", default="STDout") 
-	# parser.add_option("--ifp", action="store_true", help="(not implemented yet!) If we detect an error on our inital (non-malicous) request it's very likely that you will get a false positive for the given URL. by defualt, we will not test URL's with a high FP potential (better if running pyLobster against a large list of URL's). If you would like to test the URL anyway set this switch")
-	parser.add_option("-v", action="store_true", help="show verbose output. not recommend when running with the -f option")
-	parser.add_option("-g", action="store_true", help="enable footprint mode. Please see manual (non-existant) for additional info on what is needed here and what this feature does.")
-	parser.add_option("-s", action="store_true", help="enable smart mode. This will look at what Headers the webserver is using and test those (this may increase you attack footprint quite a bit)")
+	parser.add_option("--fpok", action="store_true", help="If we detect an error on our inital (non-malicous) request it's very likely that you will get a false positive for the given URL. by defualt, we will not test URL's with a high FP potential (better if running pyLobster against a large list of URL's). If you would like to test the URL anyway set this switch")
+	parser.add_option("-v", action="store_true", help="Show verbose output.")
+	parser.add_option("-g", action="store_true", help="Enable footprint mode. Please see manual (non-existant) for additional info on what is needed here and what this feature does.")
+	parser.add_option("-l", action="store_true", help="Enable learning mode. If we don't hit regEx error but do get 500 then lets save the HTML for later review.")
+	parser.add_option("-s", action="store_true", help="Enable smart mode. This will look at what Headers the webserver is using and test those")
+	parser.add_option("--bad", action="store_true", help="Enable Byte Anomaly Detection.")
 	(options, args) = parser.parse_args()
-	return (options.filename, options.mode, options.v, options.g, options.s)
+	return (options.filename, options.mode, options.v, options.g, options.s, options.fpok, options.bad, options.l)
 
 
 # Ready Begin
