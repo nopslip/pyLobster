@@ -49,31 +49,21 @@ def check_one(url):
 			print  bcolors.FAIL + err + " error detected on inital request, false positive potential high!" + bcolors.ENDC + "\nYou can set the --ifp switch to ignore this warning and test the URL(s) anyway.\n URL not tested." 
 			write_fp_html(url, r.text, db)
 			return ("2000", "blah") 
-		return (r.status_code,r.headers['set-cookie'])
+		return (r.status_code,r.headers['set-cookie'], r.headers)
 	except (requests.ConnectionError, requests.Timeout):
 		status = 0
 		cookie = 2
                 return (status,cookie)
 
 # finally, lets throw some malformed http headers. 
-def attack_loop(url,c):
+def attack_loop(url, c, headers):
 			filename, mode, noise, footprint = cmd_options()
 			if footprint:
 				send_footprint(url, get_footprint_key("key.txt"))
-			test_url(url, set_test_array())			
-			# a_1(url)
-			# a_2(url)
-			# a_3(url)
-			# a_4(url)
-			# a_5(url)
-			# a_6(url)
-			# a_7(url)
-			# a_8(url)
+			test_url(url, set_test_array(), headers)			
 			#Don't test cookies if the server didn't set any 
 			if c != None: 
 				a_9(url,c)
-			# a_10(url)
-			# a_11(url)
 			if c != None:
 				a_12(url,c)
 
@@ -89,9 +79,11 @@ def set_test_array():
 	test[8] = {'User-Agent': 'Mozilla/4.2 (X12; Linux x86_64)', 'Host': ';'}
 	test[10] = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)','X-Forwarded-For': ';'}
 	test[11] = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)','Referer': ';'}
+	# load_custom_headers(
 	return test
 
-def test_url(url,test):
+def test_url(url,test, headers):
+	custom = header_surgery(headers)
 	for i in test:	
 		at = i
 		gtg = 0
@@ -104,7 +96,15 @@ def test_url(url,test):
 					base_attack(a,at,url)
 			except (requests.ConnectionError, requests.Timeout):
 				attack_fail(url)  	
-
+def header_surgery(h):
+	h = str(h)
+	# m = re.match(r"{'(.*?)':.*?,\s'(.*?)':.*?,\s'(.*?)'", h)
+	m = re.match(r"(.*?')(.*?')", h, re.M|re.I)
+	print m.group(0)
+	print m.group(1)
+	# print m.group(2)
+	# print m.group(3)
+	
 
 #the cookie attack. Premise is simple, send SQLi (or other bogus cookies) back to webserver, parse the returned HTML (sql_error_check) to see if there is an error thrown from the server.
 def a_9(url,c):	
@@ -398,7 +398,7 @@ def ensure_dir(f):
 #here we go
 def begin(url):
 	
-	statusCode, cookie = check_one(url)	
+	statusCode, cookie, headers = check_one(url)	
 	
 	if statusCode == 0:
 		bad_url(url)
@@ -410,7 +410,7 @@ def begin(url):
 			error_500(url)
 	
 	else:
-		attack_loop(url,cookie)
+		attack_loop(url,cookie, headers)
     
 #main yo
 def main():
