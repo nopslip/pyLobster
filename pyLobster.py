@@ -18,11 +18,12 @@ def cmd_options():
 	parser = OptionParser()
 	parser.add_option("-f", dest="filename", help="file name to read url's from", metavar="url_list.txt")
 	parser.add_option("-M", dest="mode", help="set the output mode, defualt is stdout, options include ES for ElasticSearch and SQLite for SQLite", default="STDout") 
-	parser.add_option("--ifp", action="store_true", help="If we detect a SQL error on our inital (non-malicous) request it's very likely that you will get a False Positive for the given URL. by defualt (--ifp notset), we will not test URL's with a high FP potential (better if running pyLobster against a large list of URL's). If you would like to test the URL anyway set this switch")
+	parser.add_option("--ifp", action="store_true", help="(not implemented yet!) If we detect an error on our inital (non-malicous) request it's very likely that you will get a false positive for the given URL. by defualt, we will not test URL's with a high FP potential (better if running pyLobster against a large list of URL's). If you would like to test the URL anyway set this switch")
 	parser.add_option("--h", dest="header_mode", help="3 Options, all (not yet supported), smart (looks at what headers the website set and only tests those), minimal (only test common dynamic header fields, defualt), custom (pick fields you want to attack, not yet suppored)", metavar="minimal")
 	parser.add_option("-v", action="store_true", help="show verbose output. not recommend when running with the -f option")
+	parser.add_option("-g", action="store_true", help="enable footprint mode. This will cause the tool to send 4 additional GET requests and is not recommended to be used unless you know what you are doing.")
 	(options, args) = parser.parse_args()
-	return (options.filename, options.mode, options.v)
+	return (options.filename, options.mode, options.v, options.g)
 
 def get_url():
 	print "what url would you like teh Lobster to visit?"
@@ -34,7 +35,7 @@ def check_one(url):
 	headers = {'User-Agent': 'Mozilla/5.0'}
 	try:
 		r = requests.get(url, headers=headers, allow_redirects=False)  
-		filename, mode, noise = cmd_options()		
+		filename, mode, noise, footprint = cmd_options()		
 		if noise:
 			print "we recieved a status code of:" + str(r.status_code)
 			print bcolors.HEADER + "_.::Cookie::._\n" + bcolors.ENDC 
@@ -56,150 +57,54 @@ def check_one(url):
 
 # finally, lets throw some malformed http headers. 
 def attack_loop(url,c):
-			a_1(url)
-			a_2(url)
-			a_3(url)
-			a_4(url)
-			a_5(url)
-			a_6(url)
-			a_7(url)
-			a_8(url)
+			filename, mode, noise, footprint = cmd_options()
+			if footprint:
+				send_footprint(url, get_footprint_key("key.txt"))
+			test_url(url, set_test_array())			
+			# a_1(url)
+			# a_2(url)
+			# a_3(url)
+			# a_4(url)
+			# a_5(url)
+			# a_6(url)
+			# a_7(url)
+			# a_8(url)
 			#Don't test cookies if the server didn't set any 
 			if c != None: 
 				a_9(url,c)
-			a_10(url)
-			a_11(url)
+			# a_10(url)
+			# a_11(url)
 			if c != None:
 				a_12(url,c)
-# and the test requests 
-# this one throws the standard SQLinjection test of a ' as the useragent 
 
-def a_1(url):
-	headers = {'User-Agent': '\''}	
-	at = 1
-	gtg = 0
-	try: 
-   		a = requests.get(url, headers=headers,allow_redirects=False)
-		gtg = 1
-	except (requests.ConnectionError, requests.Timeout):
-		attack_fail(url)  	
-	if gtg == 1:
-		base_attack(a,at,url)
-	                      
-def a_2(url):
+def set_test_array():
+	test = {}
+	test[1] = {'User-Agent': '\''}	
+	test[2] = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)', 'Host': '\''}
+	test[3] = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)', 'From': '\''}
+	test[4] = {'User-Agent': '\"'}
+	test[5] = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)','X-Forwarded-For': '\''}
+	test[6] = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)','Referer': '\''}
+	test[7] = {'User-Agent': ';'}
+	test[8] = {'User-Agent': 'Mozilla/4.2 (X12; Linux x86_64)', 'Host': ';'}
+	test[10] = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)','X-Forwarded-For': ';'}
+	test[11] = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)','Referer': ';'}
+	return test
 
-	headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)', 'Host': '\''}	
-	at = 2
-	gtg = 0
-	try: 
-   		a = requests.get(url, headers=headers,allow_redirects=False)
-		gtg = 1
-	except (requests.ConnectionError, requests.Timeout):
-		attack_fail(url)  	
-	if gtg == 1:
-		base_attack(a,at,url)
+def test_url(url,test):
+	for i in test:	
+		at = i
+		gtg = 0
+		if i != 0 and i != 9 and i !=12:		
+			# headers = test[i]	
+			try: 
+   				a = requests.get(url, headers=test[i], allow_redirects=False)
+				gtg = 1
+				if gtg == 1:
+					base_attack(a,at,url)
+			except (requests.ConnectionError, requests.Timeout):
+				attack_fail(url)  	
 
-def a_3(url):
-	headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)', 'From': '\''}	
-	at = 3
-	gtg = 0
-	try: 
-   		a = requests.get(url, headers=headers,allow_redirects=False)
-		gtg = 1
-	except (requests.ConnectionError, requests.Timeout):
-		attack_fail(url)  	
-	if gtg == 1:
-		base_attack(a,at,url)
-
-def a_4(url):
-        headers = {'User-Agent': '\"'}
-        at = 4
-	gtg = 0
-	try: 
-   		a = requests.get(url, headers=headers,allow_redirects=False)
-		gtg = 1
-	except (requests.ConnectionError, requests.Timeout):
-		attack_fail(url)  	
-	
-	if gtg == 1:
-		base_attack(a,at,url)
-
-def a_5(url):
-	headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)','X-Forwarded-For': '\''}
-	at = 5
-	gtg = 0
-	try: 
-   		a = requests.get(url, headers=headers,allow_redirects=False)
-		gtg = 1
-	except (requests.ConnectionError, requests.Timeout):
-		attack_fail(url)  	
-	
-	if gtg == 1:
-		base_attack(a,at,url)
-
-def a_6(url):
-        headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)','Referer': '\''}
-        at = 6
-	gtg = 0
-        try: 
-   		a = requests.get(url, headers=headers,allow_redirects=False)
-		gtg = 1
-	except (requests.ConnectionError, requests.Timeout):
-		attack_fail(url)  	
-	
-	if gtg == 1:
-		base_attack(a,at,url)
-
-def a_7(url):
-
-	headers = {'User-Agent': ';'}	
-	at = 7
-	gtg = 0
-	try: 
-   		a = requests.get(url, headers=headers,allow_redirects=False)
-		gtg = 1
-	except (requests.ConnectionError, requests.Timeout):
-		attack_fail(url)  	
-	if gtg == 1:
-		base_attack(a,at,url)
-
-def a_8(url):
-	headers = {'User-Agent': 'Mozilla/4.2 (X12; Linux x86_64)', 'Host': ';'}	
-	at = 8
-	gtg = 0
-	try: 
-   		a = requests.get(url, headers=headers,allow_redirects=False)
-		gtg = 1
-	except (requests.ConnectionError, requests.Timeout):
-		attack_fail(url)  	
-	if gtg == 1:
-		base_attack(a,at,url)
-
-def a_10(url):
-	headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)','X-Forwarded-For': ';'}
-	at = 10
-	gtg = 0
-	try: 
-   		a = requests.get(url, headers=headers,allow_redirects=False)
-		gtg = 1
-	except (requests.ConnectionError, requests.Timeout):
-		attack_fail(url)  	
-	
-	if gtg == 1:
-		base_attack(a,at,url)
-
-def a_11(url):
-        headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)','Referer': ';'}
-        at = 11
-	gtg = 0
-        try: 
-   		a = requests.get(url, headers=headers,allow_redirects=False)
-		gtg = 1
-	except (requests.ConnectionError, requests.Timeout):
-		attack_fail(url)  	
-	
-	if gtg == 1:
-		base_attack(a,at,url)
 
 #the cookie attack. Premise is simple, send SQLi (or other bogus cookies) back to webserver, parse the returned HTML (sql_error_check) to see if there is an error thrown from the server.
 def a_9(url,c):	
@@ -266,6 +171,24 @@ def a_12(url,c):
 	if gtg == 1:
 		base_attack(a,at,url)
 
+
+def send_footprint(url,key):
+        
+	fp = {}
+	fp[0] = {'User-Agent': key}
+        fp[1] = {'Referer': key}
+	fp[2] = {'Host': key}
+	fp[3] = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)', 'X-Forwarded-For': key}
+	try:	
+        	for i in fp:   		
+			a = requests.get(url, headers=fp[i] , allow_redirects=False)
+	except (requests.ConnectionError, requests.Timeout):
+		print 'fuck! footprint fail' + url
+			
+	
+def get_footprint_key(filename):
+	with open(filename) as f:
+		return f.read()	
 
 
 # def attack_x(url):
@@ -339,6 +262,9 @@ def base_attack(a,at,url):
 	db = None
 	# print a.headers['content-type']
 	params = a.headers
+	filename, mode, noise, footprint = cmd_options()
+	if noise:
+		print params
         #lets try to make sure its not a binary file of some sort
 	if there_is_no_binary(a) == True:
         	try:
@@ -348,7 +274,7 @@ def base_attack(a,at,url):
                 except():        	
 			print a.headers['content-type']
 			print "can't be written as text" 
-		filename, mode, noise = cmd_options()		
+		filename, mode, noise, footprint = cmd_options()		
 		if mode == "ES":
 			write_to_ES(url,a.status_code,at,params,sErr,db)
 		else:                
@@ -488,7 +414,7 @@ def begin(url):
     
 #main yo
 def main():
-	filename, Mode , noise = cmd_options() 
+	filename, Mode , noise, footprint = cmd_options() 
 	
 	if filename == None: # then a list was not specfied
 		url = get_url() # request user input, return status code		
