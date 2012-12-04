@@ -19,11 +19,12 @@ def cmd_options():
 	parser.add_option("-f", dest="filename", help="file name to read url's from", metavar="url_list.txt")
 	parser.add_option("-M", dest="mode", help="set the output mode, defualt is stdout, options include ES for ElasticSearch and SQLite for SQLite", default="STDout") 
 	parser.add_option("--ifp", action="store_true", help="(not implemented yet!) If we detect an error on our inital (non-malicous) request it's very likely that you will get a false positive for the given URL. by defualt, we will not test URL's with a high FP potential (better if running pyLobster against a large list of URL's). If you would like to test the URL anyway set this switch")
-	parser.add_option("--h", dest="header_mode", help="3 Options, all (not yet supported), smart (looks at what headers the website set and only tests those), minimal (only test common dynamic header fields, defualt), custom (pick fields you want to attack, not yet suppored)", metavar="minimal")
+	# parser.add_option("--h", dest="header_mode", help="3 Options, all (not yet supported), smart (looks at what headers the website set and only tests those), minimal (only test common dynamic header fields, defualt), custom (pick fields you want to attack, not yet suppored)", metavar="minimal")
 	parser.add_option("-v", action="store_true", help="show verbose output. not recommend when running with the -f option")
 	parser.add_option("-g", action="store_true", help="enable footprint mode. This will cause the tool to send 4 additional GET requests and is not recommended to be used unless you know what you are doing.")
+	parser.add_option("-s", action="store_true", help="enable smart mode. This will look at what Headers the webserver is using and test those (this may increase you attack footprint quite a bit)")
 	(options, args) = parser.parse_args()
-	return (options.filename, options.mode, options.v, options.g)
+	return (options.filename, options.mode, options.v, options.g, options.s)
 
 def get_url():
 	print "what url would you like teh Lobster to visit?"
@@ -35,7 +36,7 @@ def check_one(url):
 	headers = {'User-Agent': 'Mozilla/5.0'}
 	try:
 		r = requests.get(url, headers=headers, allow_redirects=False)  
-		filename, mode, noise, footprint = cmd_options()		
+		filename, mode, noise, footprint, smart = cmd_options()		
 		if noise:
 			print "we recieved a status code of:" + str(r.status_code)
 			print bcolors.HEADER + "_.::Cookie::._\n" + bcolors.ENDC 
@@ -57,17 +58,17 @@ def check_one(url):
 
 # finally, lets throw some malformed http headers. 
 def attack_loop(url, c, headers):
-			filename, mode, noise, footprint = cmd_options()
+			filename, mode, noise, footprint,  = cmd_options()
 			if footprint:
 				send_footprint(url, get_footprint_key("key.txt"))
-			test_url(url, set_test_array(), headers)			
+			test_url(url, set_test_array(headers))			
 			#Don't test cookies if the server didn't set any 
 			if c != None: 
 				a_9(url,c)
 			if c != None:
 				a_12(url,c)
 
-def set_test_array():
+def set_test_array(h):
 	test = {}
 	test[1] = {'User-Agent': '\''}	
 	test[2] = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)', 'Host': '\''}
@@ -79,16 +80,24 @@ def set_test_array():
 	test[8] = {'User-Agent': 'Mozilla/4.2 (X12; Linux x86_64)', 'Host': ';'}
 	test[10] = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)','X-Forwarded-For': ';'}
 	test[11] = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)','Referer': ';'}
-	# load_custom_headers(
+	filename, mode, noise, footprint, smart = cmd_options()
+	if smart:
+		c = 13 
+		for z in h:
+			if z != 'User-Agent' and z != 'X-Forwarded-For' and z != 'Referer' and z != 'Host' and z != 'From':
+				test[c] = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)', z : '\''}
+				c += 1
+				print z
+				test[c] = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)', z : ';'}
+				c += 1
 	return test
 
-def test_url(url,test, headers):
-	custom = header_surgery(headers)
-	for i in test:	
+def test_url(url, test):
+	for i in test:
+		print test	
 		at = i
 		gtg = 0
 		if i != 0 and i != 9 and i !=12:		
-			# headers = test[i]	
 			try: 
    				a = requests.get(url, headers=test[i], allow_redirects=False)
 				gtg = 1
@@ -96,14 +105,6 @@ def test_url(url,test, headers):
 					base_attack(a,at,url)
 			except (requests.ConnectionError, requests.Timeout):
 				attack_fail(url)  	
-def header_surgery(h):
-	h = str(h)
-	# m = re.match(r"{'(.*?)':.*?,\s'(.*?)':.*?,\s'(.*?)'", h)
-	m = re.match(r"(.*?')(.*?')", h, re.M|re.I)
-	print m.group(0)
-	print m.group(1)
-	# print m.group(2)
-	# print m.group(3)
 	
 
 #the cookie attack. Premise is simple, send SQLi (or other bogus cookies) back to webserver, parse the returned HTML (sql_error_check) to see if there is an error thrown from the server.
@@ -262,7 +263,7 @@ def base_attack(a,at,url):
 	db = None
 	# print a.headers['content-type']
 	params = a.headers
-	filename, mode, noise, footprint = cmd_options()
+	filename, mode, noise, footprint, smart = cmd_options()
 	if noise:
 		print params
         #lets try to make sure its not a binary file of some sort
@@ -274,7 +275,7 @@ def base_attack(a,at,url):
                 except():        	
 			print a.headers['content-type']
 			print "can't be written as text" 
-		filename, mode, noise, footprint = cmd_options()		
+		filename, mode, noise, footprint, smart = cmd_options()		
 		if mode == "ES":
 			write_to_ES(url,a.status_code,at,params,sErr,db)
 		else:                
