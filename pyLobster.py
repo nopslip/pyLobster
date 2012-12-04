@@ -14,17 +14,6 @@ import datetime
 import re 
 import os.path
 
-def cmd_options():
-	parser = OptionParser()
-	parser.add_option("-f", dest="filename", help="file name to read url's from", metavar="url_list.txt")
-	parser.add_option("-M", dest="mode", help="set the output mode, defualt is stdout, options include ES for ElasticSearch and SQLite for SQLite", default="STDout") 
-	parser.add_option("--ifp", action="store_true", help="(not implemented yet!) If we detect an error on our inital (non-malicous) request it's very likely that you will get a false positive for the given URL. by defualt, we will not test URL's with a high FP potential (better if running pyLobster against a large list of URL's). If you would like to test the URL anyway set this switch")
-	# parser.add_option("--h", dest="header_mode", help="3 Options, all (not yet supported), smart (looks at what headers the website set and only tests those), minimal (only test common dynamic header fields, defualt), custom (pick fields you want to attack, not yet suppored)", metavar="minimal")
-	parser.add_option("-v", action="store_true", help="show verbose output. not recommend when running with the -f option")
-	parser.add_option("-g", action="store_true", help="enable footprint mode. This will cause the tool to send 4 additional GET requests and is not recommended to be used unless you know what you are doing.")
-	parser.add_option("-s", action="store_true", help="enable smart mode. This will look at what Headers the webserver is using and test those (this may increase you attack footprint quite a bit)")
-	(options, args) = parser.parse_args()
-	return (options.filename, options.mode, options.v, options.g, options.s)
 
 def get_url():
 	print "what url would you like teh Lobster to visit?"
@@ -33,15 +22,15 @@ def get_url():
 
 # use Requests to grab status code of url. if the remote host does not respond the function will return a status_code of 0. This is to be expected and means we could not contact the remote host. if you want to know why that is you may be able to edit defaults.py of the Requests module to gather more informaiton. 
 def check_one(url):
-	headers = {'User-Agent': 'Mozilla/5.0'}
+	headers = {'User-Agent': 'PyLobster v0.8'}
 	try:
 		r = requests.get(url, headers=headers, allow_redirects=False)  
 		filename, mode, noise, footprint, smart = cmd_options()		
 		if noise:
 			print "we recieved a status code of:" + str(r.status_code)
-			print bcolors.HEADER + "_.::Cookie::._\n" + bcolors.ENDC 
+			print bcolors.HEADER + "__.::Cookie Set By Server::.__\n" + bcolors.ENDC 
 			print r.headers['set-cookie']
-			print bcolors.OKBLUE + "__.::HTML Data::.__\n" + bcolors.ENDC 
+			print bcolors.OKBLUE + "__.::HTML Data Returned::.__\n" + bcolors.ENDC 
 			print r.text
 			
 		if there_is_no_binary(r) == True:
@@ -58,48 +47,51 @@ def check_one(url):
 
 # finally, lets throw some malformed http headers. 
 def attack_loop(url, c, headers):
-			filename, mode, noise, footprint,  = cmd_options()
+			filename, mode, noise, footprint, smart = cmd_options()
 			if footprint:
 				send_footprint(url, get_footprint_key("key.txt"))
 			test_url(url, set_test_array(headers))			
 			#Don't test cookies if the server didn't set any 
 			if c != None: 
 				a_9(url,c)
-			if c != None:
 				a_12(url,c)
-
+			
 def set_test_array(h):
 	test = {}
 	test[1] = {'User-Agent': '\''}	
-	test[2] = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)', 'Host': '\''}
-	test[3] = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)', 'From': '\''}
+	test[2] = {'User-Agent': 'PyLobster v0.8', 'Host': '\''}
+	test[3] = {'User-Agent': 'PyLobster v0.8', 'From': '\''}
 	test[4] = {'User-Agent': '\"'}
-	test[5] = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)','X-Forwarded-For': '\''}
-	test[6] = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)','Referer': '\''}
+	test[5] = {'User-Agent': 'PyLobster v0.8','X-Forwarded-For': '\''}
+	test[6] = {'User-Agent': 'PyLobster v0.8','Referer': '\''}
 	test[7] = {'User-Agent': ';'}
-	test[8] = {'User-Agent': 'Mozilla/4.2 (X12; Linux x86_64)', 'Host': ';'}
-	test[10] = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)','X-Forwarded-For': ';'}
-	test[11] = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)','Referer': ';'}
+	test[8] = {'User-Agent': 'PyLobster v0.8', 'Host': ';'}
+	test[10] = {'User-Agent': 'PyLobster v0.8','X-Forwarded-For': ';'}
+	test[11] = {'User-Agent': 'PyLobster v0.8','Referer': ';'}
 	filename, mode, noise, footprint, smart = cmd_options()
 	if smart:
 		c = 13 
 		for z in h:
 			if z != 'User-Agent' and z != 'X-Forwarded-For' and z != 'Referer' and z != 'Host' and z != 'From':
-				test[c] = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)', z : '\''}
+				test[c] = {'User-Agent': 'PyLobster v0.8', z : '\''}
 				c += 1
-				print z
-				test[c] = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)', z : ';'}
+				test[c] = {'User-Agent': 'PyLobster v0.8', z : ';'}
 				c += 1
 	return test
 
 def test_url(url, test):
+	filename, mode, noise, footprint, smart = cmd_options()		
+	if noise:	
+		print bcolors.HEADER + "Full Arrry of Requests to be Sent\n" + bcolors.ENDC
+		print test
 	for i in test:
-		print test	
 		at = i
 		gtg = 0
 		if i != 0 and i != 9 and i !=12:		
 			try: 
    				a = requests.get(url, headers=test[i], allow_redirects=False)
+				if noise:
+					print bcolors.OKBLUE + str(test[i]) + bcolors.ENDC				
 				gtg = 1
 				if gtg == 1:
 					base_attack(a,at,url)
@@ -125,7 +117,7 @@ def a_9(url,c):
 		if i & 1: 		
 			if re.search(r".*?;",m.group(i)) == None:
 				clist.append(m.group(i).rstrip('='))
-	headers = {'User-Agent': 'Mozilla/5.0'}
+	headers = {'User-Agent': 'PyLobster v0.8'}
         #lets create our cookie dict/array and add a value for each cookie/key
         cookies = {}
 	for name in clist:
@@ -157,7 +149,7 @@ def a_12(url,c):
 		if i & 1: 		
 			if re.search(r".*?;",m.group(i)) == None:
 				clist.append(m.group(i).rstrip('='))
-	headers = {'User-Agent': 'Mozilla/4.2'}
+	headers = {'User-Agent': 'PyLobster v0.8'}
         #lets create our cookie dict/array and add a value for each cookie/key
         cookies = {}
 	for name in clist:
@@ -179,10 +171,11 @@ def send_footprint(url,key):
 	fp[0] = {'User-Agent': key}
         fp[1] = {'Referer': key}
 	fp[2] = {'Host': key}
-	fp[3] = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)', 'X-Forwarded-For': key}
+	fp[3] = {'User-Agent': 'PyLobster v0.8', 'X-Forwarded-For': key}
 	try:	
         	for i in fp:   		
 			a = requests.get(url, headers=fp[i] , allow_redirects=False)
+			print "Footprint " + str(fp[i]) + " sent!"
 	except (requests.ConnectionError, requests.Timeout):
 		print 'fuck! footprint fail' + url
 			
@@ -264,9 +257,7 @@ def base_attack(a,at,url):
 	# print a.headers['content-type']
 	params = a.headers
 	filename, mode, noise, footprint, smart = cmd_options()
-	if noise:
-		print params
-        #lets try to make sure its not a binary file of some sort
+	#lets try to make sure its not a binary file of some sort
 	if there_is_no_binary(a) == True:
         	try:
 			# print a.text			
@@ -415,7 +406,7 @@ def begin(url):
     
 #main yo
 def main():
-	filename, Mode , noise, footprint = cmd_options() 
+	filename, Mode , noise, footprint, smart = cmd_options() 
 	
 	if filename == None: # then a list was not specfied
 		url = get_url() # request user input, return status code		
@@ -434,6 +425,18 @@ def main():
 				begin(url) #research 
 				count = count + 1
 		f.close()
+
+def cmd_options():
+	parser = OptionParser()
+	parser.add_option("-f", dest="filename", help="file name to read url's from", metavar="url_list.txt")
+	parser.add_option("-M", dest="mode", help="set the output mode, defualt is stdout, options include ES for ElasticSearch and SQLite for SQLite", default="STDout") 
+	# parser.add_option("--ifp", action="store_true", help="(not implemented yet!) If we detect an error on our inital (non-malicous) request it's very likely that you will get a false positive for the given URL. by defualt, we will not test URL's with a high FP potential (better if running pyLobster against a large list of URL's). If you would like to test the URL anyway set this switch")
+	parser.add_option("-v", action="store_true", help="show verbose output. not recommend when running with the -f option")
+	parser.add_option("-g", action="store_true", help="enable footprint mode. Please see manual (non-existant) for additional info on what is needed here and what this feature does.")
+	parser.add_option("-s", action="store_true", help="enable smart mode. This will look at what Headers the webserver is using and test those (this may increase you attack footprint quite a bit)")
+	(options, args) = parser.parse_args()
+	return (options.filename, options.mode, options.v, options.g, options.s)
+
 
 # Ready Begin
 if __name__ == "__main__":
