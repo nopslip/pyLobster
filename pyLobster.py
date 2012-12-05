@@ -22,7 +22,7 @@ def get_url():
 
 # use Requests to grab status code of url. if the remote host does not respond the function will return a status_code of 0. This is to be expected and means we could not contact the remote host. if you want to know why that is you may be able to edit defaults.py of the Requests module to gather more informaiton. 
 def check_one(url):
-	headers = {'User-Agent': 'PyLobster v0.8'}
+	headers = {'User-Agent': 'User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20100101 Firefox/16.0'}
 	try:
 		r = requests.get(url, headers=headers, allow_redirects=False)  
 		filename, mode, noise, footprint, smart, fpok, bad, learn = cmd_options()		
@@ -38,10 +38,10 @@ def check_one(url):
 			print str(r.headers) + "\n"
 		if there_is_no_binary(r) == True:
 			sErr, db, err = sql_error_check(url, r.text) 
-		if sErr == True and fpok != True:
-			print  bcolors.FAIL + err + " :: Error detected on inital request. False positive potential high!" + bcolors.ENDC + "\nYou can set the --fpok switch to ignore this warning and test the URL(s) anyway.\n" + bcolors.HEADER + "URL not tested." + bcolors.ENDC 
-			write_fp_html(url, r.text, db)
-			return ("2000", "ghost", "variable") 
+			if sErr == True and fpok != True:
+				print  bcolors.FAIL + err + " :: Error detected on inital request. False positive potential high!" + bcolors.ENDC + "\nYou can set the --fpok switch to ignore this warning and test the URL(s) anyway.\n" + bcolors.HEADER + "URL not tested." + bcolors.ENDC 
+				write_fp_html(url, r.text, db)
+				return ("2000", "ghost", "variable") 
 		return (r.status_code,r.headers['set-cookie'], r.headers)
 	except (requests.ConnectionError, requests.Timeout):
 		status = 0
@@ -63,22 +63,22 @@ def attack_loop(url, c, headers):
 def set_test_array(h):
 	filename, mode, noise, footprint, smart, fpok, bad, learn = cmd_options()	
 	test = {}
-	test[0] = {'User-Agent': 'PyLobster v0.8', 'pyL0bster': ';'}
+	test[0] = {'User-Agent': 'User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20100101 Firefox/16.0', 'pyL0bster': ';'}
 	test[1] = {'User-Agent': '\''}	
-	test[2] = {'User-Agent': 'PyLobster v0.8', 'Host': '\''}
-	test[3] = {'User-Agent': 'PyLobster v0.8', 'From': '\''}
+	test[2] = {'User-Agent': 'User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20100101 Firefox/16.0', 'Host': '\''}
+	test[3] = {'User-Agent': 'User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20100101 Firefox/16.0', 'From': '\''}
 	test[4] = {'User-Agent': '\"'}
-	test[5] = {'User-Agent': 'PyLobster v0.8', 'X-Forwarded-For': '\''}
-	test[6] = {'User-Agent': 'PyLobster v0.8', 'Referer': '\''}
+	test[5] = {'User-Agent': 'User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20100101 Firefox/16.0', 'X-Forwarded-For': '\''}
+	test[6] = {'User-Agent': 'User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20100101 Firefox/16.0', 'Referer': '\''}
 	test[7] = {'User-Agent': ';'}
-	test[8] = {'User-Agent': 'PyLobster v0.8', 'Host': ';'}
-	test[10] = {'User-Agent': 'PyLobster v0.8', 'X-Forwarded-For': ';'}
-	test[11] = {'User-Agent': 'PyLobster v0.8', 'Referer': ';'}
-	test[13] = {'User-Agent': 'PyLobster v0.8', '%00': '%00'}
+	test[8] = {'User-Agent': 'User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20100101 Firefox/16.0', 'Host': ';'}
+	test[10] = {'User-Agent': 'User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20100101 Firefox/16.0', 'X-Forwarded-For': ';'}
+	test[11] = {'User-Agent': 'User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20100101 Firefox/16.0', 'Referer': ';'}
+	test[13] = {'User-Agent': 'User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20100101 Firefox/16.0', '%00': '%00'}
 	test[14] = {'User-Agent': '%00\''}
-	test[15] = {'User-Agent': 'PyLobster v0.8', 'Host': '%00\''}	
-	test[16] = {'User-Agent': 'PyLobster v0.8', 'X-Forwarded-For': '%00\''}
-	test[17] = {'User-Agent': 'PyLobster v0.8', 'Referer': '%00\''}
+	test[15] = {'User-Agent': 'User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20100101 Firefox/16.0', 'Host': '%00\''}	
+	test[16] = {'User-Agent': 'User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20100101 Firefox/16.0', 'X-Forwarded-For': '%00\''}
+	test[17] = {'User-Agent': 'User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20100101 Firefox/16.0', 'Referer': '%00\''}
 			
 	if smart:
 		noTest = ['user-agent','x-forwarded-for','referer', 'host', 'from', 'etag', 'accept-ranges', 'age', 'accept-encoding', 'vary', 'last-modified', 'date', 'content-type', 'set-cookie','transfer-encoding', 'accept','accept-language','accept-datetime','cache-control', 'allow', 'content-location' ]
@@ -86,9 +86,9 @@ def set_test_array(h):
 		c = 0
 		for z in h:
 			if z.lower() not in noTest:
-				smartTest[c] = {'User-Agent': 'PyLobster v0.8', z : '\''}
+				smartTest[c] = {'User-Agent': 'User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20100101 Firefox/16.0', z : '\''}
 				c += 1
-				smartTest[c] = {'User-Agent': 'PyLobster v0.8', z : ';'}
+				smartTest[c] = {'User-Agent': 'User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20100101 Firefox/16.0', z : ';'}
 				c += 1
 	else:
 		smartTest = None	
@@ -119,10 +119,10 @@ def test_url(url, test, smartTest):
 			at = "s" + str(t)
 			gtg = 0
 			try: 
-   				a = requests.get(url, headers=test[t], allow_redirects=False)
+   				a = requests.get(url, headers=smartTest[t], allow_redirects=False)
 
 				if noise:
-					print bcolors.OKBLUE + str(test[t]) + bcolors.ENDC				
+					print bcolors.OKBLUE + str(smartTest[t]) + bcolors.ENDC				
 				gtg = 1
 				if gtg == 1:	
 					base_attack(a,at,url)
@@ -148,7 +148,7 @@ def a_9(url,c):
 		if i & 1: 		
 			if re.search(r".*?;",m.group(i)) == None:
 				clist.append(m.group(i).rstrip('='))
-	headers = {'User-Agent': 'PyLobster v0.8'}
+	headers = {'User-Agent': 'User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20100101 Firefox/16.0'}
         #lets create our cookie dict/array and add a value for each cookie/key
         cookies = {}
 	for name in clist:
@@ -180,7 +180,7 @@ def a_12(url,c):
 		if i & 1: 		
 			if re.search(r".*?;",m.group(i)) == None:
 				clist.append(m.group(i).rstrip('='))
-	headers = {'User-Agent': 'PyLobster v0.8'}
+	headers = {'User-Agent': 'User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20100101 Firefox/16.0'}
         #lets create our cookie dict/array and add a value for each cookie/key
         cookies = {}
 	for name in clist:
@@ -202,11 +202,12 @@ def send_footprint(url,key):
 	fp[0] = {'User-Agent': key}
         fp[1] = {'Referer': key}
 	fp[2] = {'Host': key}
-	fp[3] = {'User-Agent': 'PyLobster v0.8', 'X-Forwarded-For': key}
+	fp[3] = {'User-Agent': 'User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20100101 Firefox/16.0', 'X-Forwarded-For': key}
 	try:	
         	for i in fp:   		
 			a = requests.get(url, headers=fp[i] , allow_redirects=False)
-			print "Footprint " + str(fp[i]) + " sent!"
+			# enable for STDout mode or something
+			# print "Footprint " + str(fp[i]) + " sent!"
 	except (requests.ConnectionError, requests.Timeout):
 		print 'fuck! footprint fail' + url
 			
@@ -224,7 +225,7 @@ def load_sauce():
 	sauce[0] = "you\shave\san\serror"
 	sauce[1] = "Warning.*supplied\sargument\sis\snot\sa\svalid\sMySQL\sresult"
 	sauce[2] = "Warning.*mysql_.*\(\)"
-	sauce[4] = "microsoft\sOLE\sDB\sProvider\sfor\sODBC\sDrivers\serror"
+	sauce[4] = "microsoft\sOLE\sDB\sProvider\sfor\sODBC\sDriver"
 	sauce[5] = "Microsoft\sOLE\sDB\sProvider\sfor\sSQL\sServer"
 	sauce[6] = "\[Microsoft\]\[ODBC Microsoft Access Driver\] Syntax error"
 	sauce[7] = "Microsoft OLE DB Provider for ODBC Drivers.*\[Microsoft\]\[ODBC SQL Server Driver\]"
@@ -241,6 +242,11 @@ def load_sauce():
 	sauce[18] = "Warning.*failed to open stream"
 	sauce[19] = "Fatal Error.*on line"
 	sauce[20] = "Fatal Error.*at line"	
+	sauce[21] = "\[Microsoft\]\[SQL\sNative\sClient\]\[SQL\sServer\]"
+	sauce[22] = "An\sunexpected\serror\shas\soccured!.*MySQL\serror!"
+	sauce[23] = "\[Microsoft\]\[ODBC\sDriver\sManager\]\sDriver"
+	sauce[24] = "\[Microsoft\]\[ODBC\sSQL\sServer\sDriver\]\[SQL\sServer\]"
+	sauce[25] = "\[Microsoft\]\[SQL\sServer\sNative\sClient\s10\.0\]Named\sPipes\sProvider"
 	return sauce
 		
 def sql_error_check(url, html):
@@ -296,13 +302,13 @@ def base_attack(a,at,url):
                 except():        	
 			print a.headers['content-type']
 			print "can't be written as text" 
-		if mode == "ES":
+		if mode == "ES" or filename:
 			write_to_ES(url,a.status_code,at,params,sErr,db)
 		else:                
 			std_out(a,at,url,sErr,err)
 		if sErr == True:
                 	write_error_html(url, a.text, at, db)
-		if bad == True and sErr == False:
+		if bad == True and sErr == False and a.headers['Content-Length'] and ogBytes:
 			find_byte_anomalies(a,at,url, noise)
 		if sErr == False and a.status_code == 500:
 			write_500_html(url, a.text, at)
