@@ -29,11 +29,13 @@ def check_one(url):
 		global ogBytes
 		ogBytes	= r.headers['Content-Length']	
 		if noise:
-			print "we recieved a status code of:" + str(r.status_code)
-			print bcolors.HEADER + "__.::Cookie Set By Server::.__\n" + bcolors.ENDC 
+			print "we recieved a status code of: " + str(r.status_code)
+			print bcolors.HEADER + "__.::Cookie Set By Server::.__" + bcolors.ENDC 
 			print r.headers['set-cookie']
-			print bcolors.OKBLUE + "__.::HTML Data Returned::.__\n" + bcolors.ENDC 
-			print r.text
+			# print bcolors.OKBLUE + "__.::HTML Data Returned::.__\n" + bcolors.ENDC 
+			# print r.text
+			print bcolors.OKBLUE + "\nHTTP Headers the server sent to us:" + bcolors.ENDC		
+			print str(r.headers) + "\n"
 		if there_is_no_binary(r) == True:
 			sErr, db, err = sql_error_check(url, r.text) 
 		if sErr == True and fpok != True:
@@ -44,51 +46,65 @@ def check_one(url):
 	except (requests.ConnectionError, requests.Timeout):
 		status = 0
 		cookie = 2
-                return (status,cookie)
+                return (status,cookie,"goat")
 
 # finally, lets throw some malformed http headers. 
 def attack_loop(url, c, headers):
 			filename, mode, noise, footprint, smart, fpok, bad, learn = cmd_options()
 			if footprint:
 				send_footprint(url, get_footprint_key("key.txt"))
-			test_url(url, set_test_array(headers))			
+			test, smartTest = set_test_array(headers)		
+			test_url(url, test, smartTest)			
 			#Don't test cookies if the server didn't set any 
 			if c != None: 
 				a_9(url,c)
 				a_12(url,c)
 			
 def set_test_array(h):
+	filename, mode, noise, footprint, smart, fpok, bad, learn = cmd_options()	
 	test = {}
+	test[0] = {'User-Agent': 'PyLobster v0.8', 'pyL0bster': ';'}
 	test[1] = {'User-Agent': '\''}	
 	test[2] = {'User-Agent': 'PyLobster v0.8', 'Host': '\''}
 	test[3] = {'User-Agent': 'PyLobster v0.8', 'From': '\''}
 	test[4] = {'User-Agent': '\"'}
-	test[5] = {'User-Agent': 'PyLobster v0.8','X-Forwarded-For': '\''}
-	test[6] = {'User-Agent': 'PyLobster v0.8','Referer': '\''}
+	test[5] = {'User-Agent': 'PyLobster v0.8', 'X-Forwarded-For': '\''}
+	test[6] = {'User-Agent': 'PyLobster v0.8', 'Referer': '\''}
 	test[7] = {'User-Agent': ';'}
 	test[8] = {'User-Agent': 'PyLobster v0.8', 'Host': ';'}
-	test[10] = {'User-Agent': 'PyLobster v0.8','X-Forwarded-For': ';'}
-	test[11] = {'User-Agent': 'PyLobster v0.8','Referer': ';'}
-	filename, mode, noise, footprint, smart, fpok, bad, learn = cmd_options()
+	test[10] = {'User-Agent': 'PyLobster v0.8', 'X-Forwarded-For': ';'}
+	test[11] = {'User-Agent': 'PyLobster v0.8', 'Referer': ';'}
+	test[13] = {'User-Agent': 'PyLobster v0.8', '%00': '%00'}
+	test[14] = {'User-Agent': '%00\''}
+	test[15] = {'User-Agent': 'PyLobster v0.8', 'Host': '%00\''}	
+	test[16] = {'User-Agent': 'PyLobster v0.8', 'X-Forwarded-For': '%00\''}
+	test[17] = {'User-Agent': 'PyLobster v0.8', 'Referer': '%00\''}
+			
 	if smart:
-		c = 13 
+		noTest = ['user-agent','x-forwarded-for','referer', 'host', 'from', 'etag', 'accept-ranges', 'age', 'accept-encoding', 'vary', 'last-modified', 'date', 'content-type', 'set-cookie','transfer-encoding', 'accept','accept-language','accept-datetime','cache-control', 'allow', 'content-location' ]
+		smartTest = {}
+		c = 0
 		for z in h:
-			if z != 'User-Agent' and z != 'X-Forwarded-For' and z != 'Referer' and z != 'Host' and z != 'From':
-				test[c] = {'User-Agent': 'PyLobster v0.8', z : '\''}
+			if z.lower() not in noTest:
+				smartTest[c] = {'User-Agent': 'PyLobster v0.8', z : '\''}
 				c += 1
-				test[c] = {'User-Agent': 'PyLobster v0.8', z : ';'}
+				smartTest[c] = {'User-Agent': 'PyLobster v0.8', z : ';'}
 				c += 1
-	return test
+	else:
+		smartTest = None	
 
-def test_url(url, test):
+	return (test, smartTest)
+
+def test_url(url, test, smartTest):
 	filename, mode, noise, footprint, smart, fpok, bad, learn = cmd_options()		
 	if noise:	
-		print bcolors.HEADER + "Full Arrry of Requests to be Sent\n" + bcolors.ENDC
+		print bcolors.HEADER + "Full Array of Requests to be Sent" + bcolors.ENDC
 		print test
+		print smartTest
 	for i in test:
 		at = i
 		gtg = 0
-		if i != 0 and i != 9 and i !=12:		
+		if i != 9 and i !=12:		
 			try: 
    				a = requests.get(url, headers=test[i], allow_redirects=False)
 				if noise:
@@ -97,7 +113,21 @@ def test_url(url, test):
 				if gtg == 1:
 					base_attack(a,at,url)
 			except (requests.ConnectionError, requests.Timeout):
-				attack_fail(url)  	
+				attack_fail(url)
+	if smart:	
+		for t in smartTest:
+			at = "s" + str(t)
+			gtg = 0
+			try: 
+   				a = requests.get(url, headers=test[t], allow_redirects=False)
+
+				if noise:
+					print bcolors.OKBLUE + str(test[t]) + bcolors.ENDC				
+				gtg = 1
+				if gtg == 1:	
+					base_attack(a,at,url)
+			except (requests.ConnectionError, requests.Timeout):
+				attack_fail(url)   	
 	
 
 #the cookie attack. Premise is simple, send SQLi (or other bogus cookies) back to webserver, parse the returned HTML (sql_error_check) to see if there is an error thrown from the server.
