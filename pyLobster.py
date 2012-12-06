@@ -52,7 +52,7 @@ def check_one(url):
 def attack_loop(url, c, headers):
 			filename, mode, noise, footprint, smart, fpok, bad, learn = cmd_options()
 			if footprint:
-				send_footprint(url, get_footprint_key("key.txt"))
+				send_footprint(url, get_footprint_key("key.txt"), noise)
 			test, smartTest = set_test_array(headers)		
 			test_url(url, test, smartTest)			
 			#Don't test cookies if the server didn't set any 
@@ -81,7 +81,7 @@ def set_test_array(h):
 	test[17] = {'User-Agent': 'User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20100101 Firefox/16.0', 'Referer': '%00\''}
 			
 	if smart:
-		noTest = ['user-agent','x-forwarded-for','referer', 'host', 'from', 'etag', 'accept-ranges', 'age', 'accept-encoding', 'vary', 'last-modified', 'date', 'content-type', 'set-cookie','transfer-encoding', 'accept','accept-language','accept-datetime','cache-control', 'allow', 'content-location' ]
+		noTest = ['user-agent','x-forwarded-for','referer', 'host', 'from', 'etag', 'accept-ranges', 'age', 'accept-encoding', 'vary', 'last-modified', 'date', 'content-type', 'set-cookie','transfer-encoding', 'accept','accept-language','accept-datetime','cache-control', 'allow', 'content-location', 'expires', 'connection','content-length','content-encoding','pragma']
 		smartTest = {}
 		c = 0
 		for z in h:
@@ -127,7 +127,7 @@ def test_url(url, test, smartTest):
 				if gtg == 1:	
 					base_attack(a,at,url)
 			except (requests.ConnectionError, requests.Timeout):
-				attack_fail(url)   	
+				smart_fail(url)   	
 	
 
 #the cookie attack. Premise is simple, send SQLi (or other bogus cookies) back to webserver, parse the returned HTML (sql_error_check) to see if there is an error thrown from the server.
@@ -196,20 +196,20 @@ def a_12(url,c):
 		base_attack(a,at,url)
 
 
-def send_footprint(url,key):
+def send_footprint(url, key, noise):
         
 	fp = {}
 	fp[0] = {'User-Agent': key}
         fp[1] = {'Referer': key}
-	fp[2] = {'Host': key}
-	fp[3] = {'User-Agent': 'User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20100101 Firefox/16.0', 'X-Forwarded-For': key}
+	# fp[2] = {'Host': key}
+	# fp[3] = {'User-Agent': 'User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20100101 Firefox/16.0', 'X-Forwarded-For': key}
 	try:	
         	for i in fp:   		
 			a = requests.get(url, headers=fp[i] , allow_redirects=False)
-			# enable for STDout mode or something
-			# print "Footprint " + str(fp[i]) + " sent!"
+			if noise:
+				print "Footprint: " + str(fp[i]) + " Sent!"
 	except (requests.ConnectionError, requests.Timeout):
-		print 'fuck! footprint fail' + url
+		print 'Fuck! Footprint fail:' + url
 			
 	
 def get_footprint_key(filename):
@@ -374,6 +374,11 @@ def attack_fail(url):
 	f = open('attackFail.log','a')
 	f.writelines(url + "\n")
 	f.close()
+
+def smart_fail(url):
+        f = open('smartFail.log','a')
+        f.writelines(url + "\n")
+        f.close()
 
 def error_500(url):
 	f = open('error_500.log','a')
