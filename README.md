@@ -3,7 +3,7 @@ pyLobster
 Used to audit web servers and applications in how they process HTTP Headers. It sends a series of GET requests with custom crafted HTML Headers and then looks for anomalies (regex's for known errors) in the response data. Tests can reveal SQL Injection vunerabilites and various other issues that are of interest.   
 
 ****Disclaimer****
-Please make sure that you have the necessary permissions from sites you intend to audit before running this tool. 
+This tool is used to perform reconnaissance only.   
  
 Features
 ============
