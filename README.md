@@ -1,6 +1,6 @@
 pyLobster
 =============
-Used to audit web servers and applications in how they process HTTP Headers. It sends a series of GET requests with custom crafted HTML Headers and then looks for anomalies (regex's for known errors) in the response data. Tests can reveal SQL Injection vunerabilites and various other issues that are of interest.   
+Used to audit web servers and applications in how they process HTTP Headers. It sends a series of GET requests with custom crafted HTML Headers and then looks for anomalies (regex's for known errors) in the response data. Tests can reveal SQL Injection vunerabilites and various other issues of interest.   
 
 ****Disclaimer****
 This tool is used to perform reconnaissance only.   
@@ -22,25 +22,28 @@ Usage
 ==========
 Show help file:
 
-    python pyLobster.py -h 
+   `python pyLobster.py -h`
 
 Run against a single URL:
 
-    python pyLobster.py
-    what url would you like teh Lobster to visit?
+   `python pyLobster.py`
+
+    what url would you like PyLobster to visit?
     http://zacharywolff.com
 
 
 If you want to feed it a list of URL's (from burp export or something)
 
-    python pyLobster.py -f urlList.txt
+  `python pyLobster.py -f urlList.txt`
+  
 
 check sampleList.txt for expected format
 
 
 Dependencies
 ================
-Tested on Python v 2.7.3 (hopefully works on 3+ too) 
+*In the process of updating for Python 3*
+Tested on Python v 2.7.3
 
 Python Requests Library
 https://github.com/kennethreitz/requests
